@@ -7,6 +7,7 @@ VERSION=${1:-"v1.0.0-beta"}
 DMG_FILE="dist/MinTik.dmg"
 RELEASE_NOTES="RELEASE_NOTES.md"
 NOTARY_VALIDATE=${NOTARY_VALIDATE:-true}
+DEPLOY_WEB=${DEPLOY_WEB:-true}
 
 echo "🚀 MinTik 自动化发布流程"
 echo "========================="
@@ -87,3 +88,20 @@ echo "https://github.com/c0sc0s/MinTik/releases/download/$VERSION/MinTik.dmg"
 echo ""
 echo "🌐 Release 页面:"
 echo "https://github.com/c0sc0s/MinTik/releases/tag/$VERSION"
+
+# 7. 可选：发布官网到 GitHub Pages（web/ 目录）
+if [ "$DEPLOY_WEB" = true ]; then
+    echo "🌐 部署官网到 GitHub Pages..."
+    REPO_NAME_WITH_OWNER=$(gh repo view --json nameWithOwner -q .nameWithOwner || echo "")
+    if [ -n "$REPO_NAME_WITH_OWNER" ]; then
+        git subtree split --prefix web -b gh-pages-tmp >/dev/null 2>&1 || true
+        git push -f origin gh-pages-tmp:gh-pages >/dev/null 2>&1 || true
+        git branch -D gh-pages-tmp >/dev/null 2>&1 || true
+        OWNER=$(echo "$REPO_NAME_WITH_OWNER" | cut -d'/' -f1)
+        REPO=$(echo "$REPO_NAME_WITH_OWNER" | cut -d'/' -f2)
+        echo "✅ 官网已发布：https://$OWNER.github.io/$REPO/"
+        echo "   提示：下载按钮将自动使用最新 Release 资产（DMG）"
+    else
+        echo "⚠️  未能确定仓库信息，跳过 Pages 部署"
+    fi
+fi
