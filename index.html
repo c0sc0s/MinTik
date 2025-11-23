@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MinTik - macOS 智能专注与健康助手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        :root {
+            --primary: #FF9F1C;
+            /* MinTik Orange */
+            --primary-dim: #9A5B12;
+            --bg-dark: #050505;
+            --app-bg: #1C1C1E;
+            /* iOS/macOS Dark Grey */
+            --grid-inactive: #2C2C2E;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* 隐藏滚动条但保留功能 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* 通用玻璃拟态 */
+        .glass-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+        }
+
+        /* APP 容器特定样式 - 高度还原 */
+        .app-container {
+            background-color: var(--app-bg);
+            border: 1px solid #333;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+            transform-style: preserve-3d;
+            /* 关键：开启3D空间 */
+            /* 注意：这里移除了 will-change 和 transition，由 JS 动态控制以保证性能 */
+        }
+
+        /* 3D 卡片内部元素层级，产生视差 */
+        .app-content-layer {
+            transform: translateZ(30px);
+            /* 让内容浮起 */
+        }
+
+        /* 动态光泽层 */
+        .card-glare {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            background: radial-gradient(farthest-corner at 50% 50%,
+                    rgba(255, 255, 255, 0.25) 0%,
+                    rgba(255, 255, 255, 0.1) 40%,
+                    rgba(255, 255, 255, 0) 80%);
+            opacity: 0;
+            pointer-events: none;
+            mix-blend-mode: soft-light;
+            z-index: 50;
+            transition: opacity 0.3s ease;
+            /* 仅光泽透明度需要 CSS 过渡 */
+            transform: translateZ(1px);
+        }
+
+        /* 霓虹发光文字 */
+        .glow-text {
+            text-shadow: 0 0 30px rgba(255, 159, 28, 0.4);
+        }
+
+        /* 背景 Canvas */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* 滚动显现动画 */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 按钮光效 */
+        .btn-glow {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .btn-glow:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 25px rgba(255, 159, 28, 0.3);
+        }
+
+        /* APP 网格样式 */
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 6px;
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            background-color: var(--grid-inactive);
+            transition: background-color 0.4s ease;
+        }
+
+        /* 不同的活跃等级 */
+        .cell-active-1 {
+            background-color: #5c3a0a;
+        }
+
+        .cell-active-2 {
+            background-color: var(--primary-dim);
+        }
+
+        .cell-active-3 {
+            background-color: var(--primary);
+            box-shadow: 0 0 8px rgba(255, 159, 28, 0.3);
+        }
+
+        /* 顶部切换栏样式 */
+        .segmented-control {
+            background-color: rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .segment-btn {
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .segment-btn.active {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* 悬浮徽章样式 */
+        .floating-badge {
+            position: absolute;
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 16px;
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+            z-index: 60;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.1s;
+            white-space: nowrap;
+        }
+
+        /* 徽章位置定义 - 调整间距防止遮挡 */
+        .badge-left {
+            top: 30%;
+            left: -40%;
+        }
+
+        .badge-right-top {
+            top: 5%;
+            right: -35%;
+        }
+
+        .badge-right-bottom {
+            bottom: 20%;
+            right: -35%;
+        }
+
+        /* --- 新增：Bento Grid 风格 Spotlight 卡片 --- */
+        .spotlight-card {
+            position: relative;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .spotlight-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+
+
+        /* 鼠标跟随光斑 */
+        .spotlight-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), rgba(255, 255, 255, 0.06), transparent 40%);
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .spotlight-card:hover::before {
+            opacity: 1;
+        }
+
+        /* 卡片内容层级提升 */
+        .spotlight-card>* {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* 图标容器高级感 */
+        .icon-box-premium {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 可爱萝卜动画 */
+        @keyframes float-wiggle {
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(-10deg);
+            }
+
+            50% {
+                transform: translateY(-12px) rotate(5deg);
+            }
+        }
+
+        .cute-carrot {
+            display: inline-block;
+            animation: float-wiggle 3s ease-in-out infinite;
+            vertical-align: top;
+            margin-left: 0px;
+            margin-top: 0px;
+            /* 稍微上移一点 */
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
+        }
+    </style>
+</head>
+
+<body class="antialiased selection:bg-orange-500 selection:text-white">
+
+    <!-- 背景 Canvas -->
+    <div id="canvas-container">
+        <canvas id="heroCanvas"></canvas>
+    </div>
+
+    <!-- 导航栏 -->
+    <nav class="fixed w-full z-50 transition-all duration-300 py-6" id="navbar">
+        <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
+            <div class="flex items-center gap-2 cursor-pointer group">
+                <div
+                    class="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-white">
+                        <path
+                            d="M2.27 21.7s9.87-3.5 12.73-6.36a4.5 4.5 0 0 0-6.36-6.37C5.77 11.84 2.27 21.7 2.27 21.7zM8.64 14l-2.05-2.04M15.34 15l-2.46-2.46" />
+                        <path d="M22 9s-1.33-2-3.5-2C16.86 7 15 9 15 9s1.33 2 3.5 2S22 9 22 9z" />
+                        <path d="M15 2s-2 1.33-2 3.5S15 9 15 9s2-1.84 2-3.5C17 3.33 15 2 15 2z" />
+                    </svg>
+                </div>
+                <span class="text-xl font-bold tracking-tight">MinTik</span>
+            </div>
+            <div class="hidden md:flex gap-8 text-sm font-medium text-gray-400">
+                <a href="#vision" class="hover:text-white transition-colors">愿景</a>
+                <a href="#philosophy" class="hover:text-white transition-colors">设计哲学</a>
+                <a href="#usecases" class="hover:text-white transition-colors">适用人群</a>
+                <a href="#features" class="hover:text-white transition-colors">功能</a>
+            </div>
+            <a href="#download"
+                class="glass-panel px-5 py-2 rounded-full text-sm font-semibold text-orange-400 hover:bg-orange-500 hover:text-white transition-all btn-glow border border-orange-500/30">
+                下载 Beta
+            </a>
+        </div>
+    </nav>
+
+    <!-- 愿景区域 (Our Vision - 中文版) -->
+    <section id="vision" class="relative pt-52 pb-16 overflow-hidden flex flex-col items-center">
+        <div
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-orange-500/5 rounded-full blur-[150px] -z-10">
+        </div>
+
+        <div class="max-w-4xl mx-auto px-6 text-center reveal">
+            <h2 class="text-5xl lg:text-7xl font-bold leading-tight tracking-tighter">
+                看见你的
+                <span
+                    class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-200 glow-text">心流时刻</span>
+                <!-- 可爱萝卜图标 -->
+                <span class="cute-carrot">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                        stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M2.27 21.7s9.87-3.5 12.73-6.36a4.5 4.5 0 0 0-6.36-6.37C5.77 11.84 2.27 21.7 2.27 21.7zM8.64 14l-2.05-2.04M15.34 15l-2.46-2.46" />
+                        <path d="M22 9s-1.33-2-3.5-2C16.86 7 15 9 15 9s1.33 2 3.5 2S22 9 22 9z" />
+                        <path d="M15 2s-2 1.33-2 3.5S15 9 15 9s2-1.84 2-3.5C17 3.33 15 2 15 2z" />
+                    </svg>
+                </span>
+            </h2>
+            <p class="text-gray-400 text-lg md:text-xl leading-relaxed max-w-3xl mx-auto mt-14  ">
+                我们相信专注是一种韵律，而非短跑冲刺。MinTik 默默地将你的心流可视化，助你在深度工作与正念休憩之间找到完美的平衡。
+            </p>
+        </div>
+
+        <div
+            class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4 leading-tight tracking-tighter mt-12">
+            <button
+                class="bg-white text-black px-8 py-4 rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] btn-glow flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors">
+                <i class="fab fa-apple text-xl"></i> Download
+            </button>
+        </div>
+    </section>
+
+    <!-- Hero 区域 -->
+    <header class="relative min-h-[90vh] flex items-center justify-center pt-12 pb-20 overflow-hidden"
+        style="perspective: 1500px;">
+
+        <div class="max-w-7xl mx-auto px-6 flex justify-center items-center relative z-10 w-full">
+            <!-- 容器开启 3d 空间 -->
+            <div id="hero-card-wrapper"
+                class="relative group cursor-pointer order-1 lg:order-2 h-auto flex items-center justify-center p-10"
+                style="transform-style: preserve-3d;">
+
+                <!-- 悬浮徽章 (Parallax Elements) -->
+                <div class="floating-badge badge-left" data-depth="1.5">
+                    <i class="fas fa-mug-hot text-orange-400"></i>
+                    <span>休息提示</span>
+                </div>
+
+                <div class="floating-badge badge-right-top" data-depth="2.0">
+                    <i class="fas fa-magic text-purple-400"></i>
+                    <span>自动记录</span>
+                </div>
+
+                <div class="floating-badge badge-right-bottom" data-depth="1.2">
+                    <i class="fas fa-shield-heart text-green-400"></i>
+                    <span>静默守护</span>
+                </div>
+
+                <!-- 模拟主窗口 (增加 id="hero-card") -->
+                <!-- 移除了 HTML 中的 transition 类，改用 JS 控制以避免冲突 -->
+                <div id="hero-card"
+                    class="app-container rounded-[2rem] p-6 w-full max-w-[420px] relative overflow-hidden"
+                    style="transform: rotateY(-5deg) rotateX(2deg);">
+                    <!-- 内容层 (app-content-layer 用于产生层级感) -->
+                    <div class="app-content-layer">
+                        <!-- 顶部栏 -->
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="w-3 h-3 rounded-full bg-[#3E3E40] mt-2"></div>
+
+                            <div class="segmented-control flex gap-1">
+                                <button class="segment-btn active w-8 h-8 flex items-center justify-center text-white">
+                                    <i class="fas fa-th-large text-sm"></i>
+                                </button>
+                                <button
+                                    class="segment-btn w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-300">
+                                    <i class="fas fa-chart-line text-sm"></i>
+                                </button>
+                                <button
+                                    class="segment-btn w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-300">
+                                    <i class="fas fa-database text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 时间显示区域 -->
+                        <div class="flex justify-between items-center mb-1">
+                            <div class="text-[5rem] font-mono font-bold tracking-tight text-white leading-none"
+                                style="font-family: 'JetBrains Mono', monospace;">20:32</div>
+                            <div class="bg-[#333] px-3 py-1 rounded-md text-xs text-gray-300 font-medium">60分钟</div>
+                        </div>
+
+                        <!-- 导航箭头与时间段 -->
+                        <div class="flex items-center gap-3 text-gray-400 mb-6 pl-1">
+                            <i class="fas fa-chevron-left text-sm cursor-pointer hover:text-white"></i>
+                            <span class="text-base font-medium font-mono tracking-wide text-gray-300">11:00 -
+                                12:00</span>
+                        </div>
+
+                        <!-- 热力图网格 -->
+                        <div class="heatmap-grid" id="main-heatmap"></div>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+
+        <!-- 滚动提示 -->
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce text-gray-600 pointer-events-none">
+            <i class="fas fa-arrow-down"></i>
+        </div>
+    </header>
+
+    <!-- 设计哲学 (替代原 Visuals) -->
+    <section id="philosophy" class="py-24 relative bg-black/50">
+        <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
+
+            <div class="order-1 md:order-1 reveal">
+                <h2 class="text-3xl md:text-5xl font-bold mb-6">关注，<br>你的每一分钟。</h2>
+                <p class="text-gray-400 text-lg leading-relaxed mb-6">
+                    我们移除了所有多余的干扰。没有复杂的报表，没有社交分享，只有你和你的时间。
+                </p>
+                <ul class="space-y-4 text-gray-300">
+                    <li class="flex items-center gap-3">
+                        <i class="fas fa-check text-orange-500"></i> 原生 macOS 开发，轻量、丝滑
+                    </li>
+                    <li class="flex items-center gap-3">
+                        <i class="fas fa-check text-orange-500"></i> 隐私优先，数据仅存储在本地
+                    </li>
+                    <li class="flex items-center gap-3">
+                        <i class="fas fa-check text-orange-500"></i> 键盘党福音，全快捷键支持
+                    </li>
+                </ul>
+            </div>
+
+            <div class="order-2 md:order-2 reveal delay-100">
+                <!-- 核心哲学图标网格 -->
+                <div class="grid grid-cols-2 gap-4 max-w-sm ml-auto">
+                    <!-- 静默守护 -->
+                    <div class="flex flex-col items-center text-center group">
+                        <div
+                            class="w-16 h-16 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-ghost text-2xl text-orange-400"></i>
+                        </div>
+                        <h4 class="text-xs font-semibold text-white mb-1">静默守护</h4>
+                        <p class="text-[10px] text-gray-500 leading-tight">不打扰，只记录</p>
+                    </div>
+
+                    <!-- 数据本地 -->
+                    <div class="flex flex-col items-center text-center group">
+                        <div
+                            class="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-shield-halved text-2xl text-blue-400"></i>
+                        </div>
+                        <h4 class="text-xs font-semibold text-white mb-1">数据本地</h4>
+                        <p class="text-[10px] text-gray-500 leading-tight">隐私至上，永不上传</p>
+                    </div>
+
+                    <!-- 极简设计 -->
+                    <div class="flex flex-col items-center text-center group">
+                        <div
+                            class="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-circle-notch text-2xl text-purple-400"></i>
+                        </div>
+                        <h4 class="text-xs font-semibold text-white mb-1">极简设计</h4>
+                        <p class="text-[10px] text-gray-500 leading-tight">没有多余，只有必要</p>
+                    </div>
+
+                    <!-- 原生体验 -->
+                    <div class="flex flex-col items-center text-center group">
+                        <div
+                            class="w-16 h-16 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                            <i class="fab fa-apple text-2xl text-green-400"></i>
+                        </div>
+                        <h4 class="text-xs font-semibold text-white mb-1">原生体验</h4>
+                        <p class="text-[10px] text-gray-500 leading-tight">为 macOS 而生</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 适用人群 (User Cases) -->
+    <section id="usecases" class="py-24 relative">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16 reveal">
+                <h2 class="text-3xl md:text-5xl font-bold mb-6">为<span class="text-orange-500">创造者</span>设计</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">无论你是写代码、设计界面，还是撰写文案，MinTik 都能帮你进入并保持心流状态。</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Case 1 -->
+                <div class="spotlight-card p-8 group reveal">
+                    <div
+                        class="h-32 rounded-xl icon-box-premium mb-6 relative overflow-hidden flex items-center justify-center">
+                        <i
+                            class="fas fa-pen-nib text-4xl text-gray-600 group-hover:text-orange-400 transition-colors duration-500 transform group-hover:scale-110"></i>
+                        <div
+                            class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-50">
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-white group-hover:text-orange-400 transition-colors">创意工作者
+                    </h3>
+                    <div class="flex gap-2 mb-4">
+                        <span
+                            class="px-2 py-1 text-[10px] font-medium bg-orange-500/10 text-orange-400 rounded border border-orange-500/20">Designers</span>
+                        <span
+                            class="px-2 py-1 text-[10px] font-medium bg-orange-500/10 text-orange-400 rounded border border-orange-500/20">Writers</span>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        守护你的心流时刻。在灵感迸发时自动记录，在疲劳来临前温柔提醒。让每一次创作都保持最佳状态。
+                    </p>
+                </div>
+
+                <!-- Case 2 -->
+                <div class="spotlight-card p-8 group reveal delay-100">
+                    <div
+                        class="h-32 rounded-xl icon-box-premium mb-6 relative overflow-hidden flex items-center justify-center">
+                        <i
+                            class="fas fa-code text-4xl text-gray-600 group-hover:text-blue-400 transition-colors duration-500 transform group-hover:scale-110"></i>
+                        <div
+                            class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-50">
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-white group-hover:text-blue-400 transition-colors">计算机工程师
+                    </h3>
+                    <div class="flex gap-2 mb-4">
+                        <span
+                            class="px-2 py-1 text-[10px] font-medium bg-blue-500/10 text-blue-400 rounded border border-blue-500/20">Developers</span>
+                        <span
+                            class="px-2 py-1 text-[10px] font-medium bg-blue-500/10 text-blue-400 rounded border border-blue-500/20">Engineers</span>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        重塑工作边界。通过键盘敲击频率智能分析工作强度，用数据量化你的努力。自律即自由。
+                    </p>
+                </div>
+
+                <!-- Case 3 -->
+                <div class="spotlight-card p-8 group reveal delay-200">
+                    <div
+                        class="h-32 rounded-xl icon-box-premium mb-6 relative overflow-hidden flex items-center justify-center">
+                        <i
+                            class="fas fa-keyboard text-4xl text-gray-600 group-hover:text-green-400 transition-colors duration-500 transform group-hover:scale-110"></i>
+                        <div
+                            class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zz4+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-50">
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-white group-hover:text-green-400 transition-colors">数字运营者
+                    </h3>
+                    <div class="flex gap-2 mb-4">
+                        <span
+                            class="px-2 py-1 text-[10px] font-medium bg-green-500/10 text-green-400 rounded border border-green-500/20">Operations</span>
+                        <span
+                            class="px-2 py-1 text-[10px] font-medium bg-green-500/10 text-green-400 rounded border border-green-500/20">Support</span>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        面对海量的消息回复与数据处理，高频的键鼠操作是你的日常。MinTik 守护你的手腕健康，用科学的节奏对抗重复劳动的疲惫。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 核心功能 (全面升级) -->
+    <section id="features" class="py-24 relative border-t border-gray-900">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16 reveal">
+                <h2 class="text-3xl md:text-5xl font-bold mb-6">不仅是记录，更是<span class="text-orange-500">健康守护</span></h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">MinTik 核心算法致力于识别你的"过度劳累"时刻，让看不见的健康隐患可视化。</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Feature 1 -->
+                <div class="spotlight-card p-6 reveal">
+                    <div
+                        class="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center mb-4 text-orange-500">
+                        <i class="fas fa-heart-pulse text-xl"></i>
+                    </div>
+                    <h4 class="text-lg font-bold mb-3 text-white">自动疲劳侦测</h4>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        无需手动操作。MinTik 实时监测键鼠活跃频率，智能识别你是否处于"高强度连续工作"状态，精准捕捉疲劳临界点。
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="spotlight-card p-6 reveal delay-100">
+                    <div class="w-12 h-12 rounded-lg bg-red-500/10 flex items-center justify-center mb-4 text-red-500">
+                        <i class="fas fa-eye text-xl"></i>
+                    </div>
+                    <h4 class="text-lg font-bold mb-3 text-white">健康隐患可视化</h4>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        拒绝盲目"卷"。通过热力图的色彩警示，直观展示你的"过度劳累"时段。让那些被忽视的连续久坐时间，变得清晰可见。
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="spotlight-card p-6 reveal delay-200">
+                    <div
+                        class="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center mb-4 text-blue-500">
+                        <i class="fas fa-mug-hot text-xl"></i>
+                    </div>
+                    <h4 class="text-lg font-bold mb-3 text-white">科学休息提醒</h4>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        在不健康状态持续前，温柔地打断你。支持自定义"强制休息"策略，帮助你从屏幕中抽离，预防颈椎病与 RSI。
+                    </p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="spotlight-card p-6 reveal delay-300">
+                    <div
+                        class="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center mb-4 text-purple-500">
+                        <i class="fas fa-magic text-xl"></i>
+                    </div>
+                    <h4 class="text-lg font-bold mb-3 text-white">无感自动记录</h4>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        忘掉"开始计时"按钮。MinTik 默默在后台记录你的一天，自动生成精确到分钟的工作时间轴，不错过每一分努力。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 下载区域 -->
+    <section id="download" class="py-24 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-t from-orange-900/20 to-transparent pointer-events-none"></div>
+        <div class="max-w-4xl mx-auto px-6 text-center reveal">
+            <h2 class="text-3xl md:text-5xl font-bold mb-8">开始掌控你的时间。</h2>
+            <div class="glass-panel p-10 rounded-3xl border border-orange-500/30 bg-black relative">
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <button
+                        class="bg-white text-black px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
+                        <i class="fab fa-apple text-xl"></i> 下载 macOS 版
+                    </button>
+                    <button
+                        class="border border-gray-600 px-8 py-4 rounded-xl font-bold text-lg hover:border-white hover:text-white text-gray-400 transition-colors">
+                        加入内测群
+                    </button>
+                </div>
+                <p class="text-xs text-gray-600 mt-6 font-mono">适用于 macOS Monterey 12.0 或更高版本</p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="border-t border-gray-900 py-12 bg-black text-sm text-center text-gray-600">
+        <p>&copy; 2025 MinTik Studio. Designed for Focus.</p>
+    </footer>
+
+    <script>
+        // --- 1. 滚动显现动画 ---
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // --- 2. 导航栏效果 ---
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                nav.classList.add('bg-black/80', 'backdrop-blur-md');
+            } else {
+                nav.classList.remove('bg-black/80', 'backdrop-blur-md');
+            }
+        });
+
+        // --- 3. 模拟 APP 热力图 (核心还原) ---
+        const heatmapContainer = document.getElementById('main-heatmap');
+        const totalCells = 12 * 7;
+        let isHeatmapAnimated = false;
+
+        // 1. 先生成静态网格 (无颜色)
+        for (let i = 0; i < totalCells; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'heatmap-cell';
+
+            const row = Math.floor(i / 12);
+            const col = i % 12;
+
+            let isActive = false;
+            let intensity = 0;
+
+            if (row >= 5) {
+                isActive = true;
+                intensity = Math.random() > 0.3 ? 3 : 2;
+            } else if (row >= 3) {
+                if (col > 2 || (col > 0 && Math.random() > 0.5)) {
+                    isActive = true;
+                    intensity = Math.random() > 0.5 ? 3 : 2;
+                }
+            } else if (row >= 1) {
+                if (col > 4 && col < 10 && Math.random() > 0.6) {
+                    isActive = true;
+                    intensity = 1;
+                }
+            }
+
+            if (Math.random() > 0.95) isActive = false;
+
+            // 将动画数据存储在 dataset 中，暂不应用类名
+            if (isActive) {
+                cell.dataset.activeClass = `cell-active-${intensity}`;
+                cell.dataset.delay = i * 10 + 200; // 稍微减少基础延迟，因为是滚动触发
+            }
+
+            heatmapContainer.appendChild(cell);
+        }
+
+        // 2. 使用 IntersectionObserver 监听滚动，进入视口才触发动画
+        const heatmapObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !isHeatmapAnimated) {
+                    isHeatmapAnimated = true;
+
+                    const cells = heatmapContainer.querySelectorAll('.heatmap-cell');
+                    cells.forEach(cell => {
+                        if (cell.dataset.activeClass) {
+                            setTimeout(() => {
+                                cell.classList.add(cell.dataset.activeClass);
+                            }, parseInt(cell.dataset.delay));
+                        }
+                    });
+
+                    // 触发一次后停止观察
+                    heatmapObserver.disconnect();
+                }
+            });
+        }, { threshold: 0.5 }); // 50% 可见时触发
+
+        heatmapObserver.observe(heatmapContainer);
+
+        // --- 4. 改进版 3D Tilt Effect (优化：更丝滑的物理跟随与光效) ---
+        const cardWrapper = document.getElementById('hero-card-wrapper');
+        const card = document.getElementById('hero-card');
+        const glare = document.querySelector('.card-glare');
+        const backGlow = document.getElementById('back-glow');
+        const badges = document.querySelectorAll('.floating-badge'); // 获取所有徽章
+
+        let isHovering = false;
+        let mouseX = 0, mouseY = 0;
+        let cardX = 0, cardY = 0;
+        let currentRotateX = 0, currentRotateY = 0;
+        let animationFrameId = null;
+
+        // 配置参数
+        const MAX_ROTATION = 12; // 最大旋转角度
+        const SMOOTHING = 0.08;  // 平滑系数 (越小越平滑但延迟越高)
+        const SCALE_ON_HOVER = 1.02;
+
+        function updateCardRect() {
+            const rect = cardWrapper.getBoundingClientRect();
+            cardX = rect.left + rect.width / 2;
+            cardY = rect.top + rect.height / 2;
+        }
+
+        // 窗口变化时更新坐标
+        window.addEventListener('scroll', updateCardRect);
+        window.addEventListener('resize', updateCardRect);
+
+        function animate() {
+            // 目标旋转角度
+            let targetRotateX = 0;
+            let targetRotateY = 0;
+            let targetScale = 1;
+            let targetGlareOpacity = 0;
+
+            if (isHovering) {
+                const rect = cardWrapper.getBoundingClientRect();
+                // 计算鼠标相对于卡片中心的偏移
+                const deltaX = mouseX - cardX;
+                const deltaY = mouseY - cardY;
+
+                // 归一化 (-1 到 1)
+                const percentX = deltaX / (rect.width / 2);
+                const percentY = deltaY / (rect.height / 2);
+
+                // 限制范围
+                const clampedX = Math.max(-1, Math.min(1, percentX));
+                const clampedY = Math.max(-1, Math.min(1, percentY));
+
+                targetRotateY = clampedX * MAX_ROTATION;
+                targetRotateX = -clampedY * MAX_ROTATION;
+                targetScale = SCALE_ON_HOVER;
+                targetGlareOpacity = 1;
+
+                // 动态光泽位置
+                const glareX = (mouseX - rect.left) / rect.width * 100;
+                const glareY = (mouseY - rect.top) / rect.height * 100;
+                // 降低不透明度，使用更柔和的渐变
+                glare.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 60%)`;
+
+                // 背景光晕视差
+                backGlow.style.transform = `translate(${currentRotateY * 1.5}px, ${currentRotateX * 1.5}px)`;
+            } else {
+                backGlow.style.transform = `translate(0, 0)`;
+            }
+
+            // 平滑插值 (Lerp)
+            currentRotateX += (targetRotateX - currentRotateX) * SMOOTHING;
+            currentRotateY += (targetRotateY - currentRotateY) * SMOOTHING;
+
+            // 应用变换
+            // 使用 toFixed 避免微小抖动
+            card.style.transform = `rotateX(${currentRotateX.toFixed(3)}deg) rotateY(${currentRotateY.toFixed(3)}deg) scale3d(${targetScale}, ${targetScale}, ${targetScale})`;
+
+            // 光泽透明度过渡 (使用 CSS transition 配合)
+            glare.style.opacity = targetGlareOpacity;
+
+            // --- 徽章视差效果 ---
+            badges.forEach(badge => {
+                const depth = parseFloat(badge.getAttribute('data-depth')) || 1;
+                // 徽章移动方向与卡片旋转方向相反，产生悬浮感
+                // rotateY 影响 X 轴位移，rotateX 影响 Y 轴位移
+                const transX = currentRotateY * 2 * depth;
+                const transY = currentRotateX * 2 * depth;
+                const transZ = 40 * depth; // Z轴突起
+
+                badge.style.transform = `translate3d(${transX}px, ${transY}px, ${transZ}px)`;
+            });
+
+            // 如果停止悬停且几乎回到原点，停止动画循环以节省性能
+            if (!isHovering && Math.abs(currentRotateX) < 0.01 && Math.abs(currentRotateY) < 0.01) {
+                card.style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+                badges.forEach(b => b.style.transform = `translate3d(0,0,0)`); // 复位徽章
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+                return;
+            }
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        cardWrapper.addEventListener('mouseenter', () => {
+            isHovering = true;
+            updateCardRect();
+            // 禁用 CSS transition 以便 JS 完全控制
+            card.style.transition = 'none';
+            if (!animationFrameId) {
+                animate();
+            }
+        });
+
+        cardWrapper.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        cardWrapper.addEventListener('mouseleave', () => {
+            isHovering = false;
+            // 不重新启用 CSS transition，而是让 animate 循环平滑回归
+        });
+
+        // --- 5. 动态 Canvas 背景 ---
+        const canvas = document.getElementById('heroCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, particles = [];
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            initParticles();
+        }
+        window.addEventListener('resize', resize);
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.2;
+                this.vy = (Math.random() - 0.5) * 0.2;
+                this.size = Math.random() * 1.5 + 0.5;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x < 0) this.x = width;
+                if (this.x > width) this.x = 0;
+                if (this.y < 0) this.y = height;
+                if (this.y > height) this.y = 0;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 159, 28, 0.2)`;
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            // 固定30个粒子
+            for (let i = 0; i < 30; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, width, height);
+
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+            }
+
+            requestAnimationFrame(animateCanvas);
+        }
+
+        resize(); // 初始化
+        animateCanvas(); // 启动动画循环
+
+        // --- 6. Bento Grid Spotlight Effect ---
+        document.querySelectorAll('.spotlight-card').forEach(card => {
+            card.addEventListener('mousemove', e => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
+    </script>
+</body>
+
+</html>
