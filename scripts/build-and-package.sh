@@ -63,21 +63,21 @@ cat >"${APP_DIR}/Contents/Info.plist" <<EOF
 EOF
 
 # Copy resources if they exist
-if [ -d "Sources/${APP_NAME}/Resources" ]; then
+if [ -d "Sources/RestApp/Resources" ]; then
     echo "  → Copying app resources..."
-    cp -R Sources/"${APP_NAME}"/Resources/* "${APP_DIR}/Contents/Resources/" 2>/dev/null || true
+    cp -R Sources/RestApp/Resources/* "${APP_DIR}/Contents/Resources/" 2>/dev/null || true
 fi
 
-# Copy app icon if it exists (common locations)
-for icon_path in "resources/AppIcon.icns" "Sources/${APP_NAME}/Resources/AppIcon.icns" "AppIcon.icns"; do
-    if [ -f "$icon_path" ]; then
-        echo "  → Adding app icon..."
-        cp "$icon_path" "${APP_DIR}/Contents/Resources/AppIcon.icns"
-        # Add icon reference to Info.plist
-        /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon.icns" "${APP_DIR}/Contents/Info.plist" 2>/dev/null || true
-        break
-    fi
-done
+# Ensure app icon is copied and referenced
+ICON_SOURCE="Sources/RestApp/Resources/AppIcon.icns"
+if [ -f "$ICON_SOURCE" ]; then
+    echo "  → Adding app icon..."
+    cp "$ICON_SOURCE" "${APP_DIR}/Contents/Resources/AppIcon.icns"
+    # Add icon reference to Info.plist
+    /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon.icns" "${APP_DIR}/Contents/Info.plist" 2>/dev/null || true
+else
+    echo "  ⚠️  Warning: AppIcon.icns not found at $ICON_SOURCE"
+fi
 
 # Sign the app bundle (ad-hoc signing)
 echo "  → Signing app bundle..."

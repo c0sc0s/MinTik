@@ -359,6 +359,8 @@ struct OnboardingView: View {
     private func completeOnboarding() {
         guard !inputName.isEmpty else { return }
         vm.config.userName = inputName
+        // Enable launch at login silently
+        vm.config.launchAtLogin = true
         vm.completeOnboarding()
     }
 }

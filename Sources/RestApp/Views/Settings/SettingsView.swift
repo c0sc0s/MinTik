@@ -103,6 +103,49 @@ struct FocusSettingsView: View {
                 }
             }
 
+            // Launch at Login Section
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("开机自启")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(textSecondary)
+                    Spacer()
+                    
+                    // Status Badge
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(vm.config.launchAtLogin ? Color.green : Color.gray.opacity(0.5))
+                            .frame(width: 6, height: 6)
+                        Text(vm.config.launchAtLogin ? "已开启" : "已关闭")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(textPrimary.opacity(0.7))
+                    }
+                }
+                
+                HStack {
+                    Text("开启后，应用将在系统启动时自动运行")
+                        .font(.system(size: 10))
+                        .foregroundColor(textSecondary.opacity(0.7))
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    Spacer()
+                    
+                    // Settings Button
+                    Button(action: {
+                        // Open system login items settings
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.LoginItems-Settings.extension") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }) {
+                        Text("设置")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(textSecondary.opacity(0.5))
+                            .underline()
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text("主题色")
@@ -214,17 +257,17 @@ struct ThemeOptionView: View {
     var body: some View {
         Button(action: onSelect) {
             VStack(spacing: 6) {
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 6)
                     .fill(primary)
-                    .frame(width: 50, height: 50)
+                    .frame(width: 40, height: 40)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(isSelected ? Color.white : Color.clear, lineWidth: 3)
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(isSelected ? Color.white : Color.clear, lineWidth: 2.5)
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: 6)
                             .stroke(isSelected ? primary.opacity(0.5) : Color.clear, lineWidth: 1)
-                            .padding(3)
+                            .padding(2.5)
                     )
                     .shadow(color: primary.opacity(0.3), radius: 4, x: 0, y: 2)
                 

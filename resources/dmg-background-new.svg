@@ -1,0 +1,36 @@
+<svg width="640" height="480" viewBox="0 0 640 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="640" height="480" fill="#050505"/>
+    
+    <!-- Header Gradient -->
+    <rect width="640" height="80" fill="url(#header-gradient)" opacity="0.1"/>
+    
+    <!-- Title -->
+    <text x="320" y="50" font-family="Arial, sans-serif" font-weight="bold" font-size="24" fill="white" text-anchor="middle" letter-spacing="1">MinTik Installer</text>
+    
+    <!-- App Placeholder Circle (Left) -->
+    <circle cx="160" cy="240" r="70" fill="white" fill-opacity="0.05" stroke="white" stroke-opacity="0.1" stroke-dasharray="5 5"/>
+    
+    <!-- Applications Placeholder Circle (Right) -->
+    <circle cx="480" cy="240" r="70" fill="white" fill-opacity="0.05" stroke="white" stroke-opacity="0.1" stroke-dasharray="5 5"/>
+    
+    <!-- Arrow -->
+    <path d="M260 240 H380 M360 220 L380 240 L360 260" stroke="url(#arrow-gradient)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Instructions -->
+    <text x="320" y="350" font-family="Arial, sans-serif" font-size="14" fill="#888" text-anchor="middle">Drag MinTik to Applications folder</text>
+    
+    <!-- Footer -->
+    <text x="320" y="450" font-family="Arial, sans-serif" font-size="12" fill="#444" text-anchor="middle">Designed for Focus</text>
+
+    <defs>
+        <linearGradient id="header-gradient" x1="0" y1="0" x2="0" y2="80" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#FF9F1C"/>
+            <stop offset="1" stop-color="#FF9F1C" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="arrow-gradient" x1="260" y1="240" x2="380" y2="240" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#555"/>
+            <stop offset="1" stop-color="#FF9F1C"/>
+        </linearGradient>
+    </defs>
+</svg>

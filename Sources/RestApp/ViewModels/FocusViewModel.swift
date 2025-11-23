@@ -59,6 +59,16 @@ class FocusViewModel: ObservableObject {
                 self?.persistConfig(cfg)
             }
             .store(in: &cancellables)
+        
+        // Observe launch at login changes
+        $config
+            .map { $0.launchAtLogin }
+            .removeDuplicates()
+            .dropFirst()
+            .sink { enabled in
+                LaunchAtLoginManager.shared.setEnabled(enabled)
+            }
+            .store(in: &cancellables)
     }
     
     deinit {
@@ -387,6 +397,15 @@ class FocusViewModel: ObservableObject {
         // Refresh permission when app becomes active (e.g. returning from System Settings)
         NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
             self?.refreshNotificationPermission()
+            self?.syncLaunchAtLoginStatus()
+        }
+    }
+    
+    /// Sync launch at login status from system
+    private func syncLaunchAtLoginStatus() {
+        let actualStatus = LaunchAtLoginManager.shared.syncStatus()
+        if config.launchAtLogin != actualStatus {
+            config.launchAtLogin = actualStatus
         }
     }
     

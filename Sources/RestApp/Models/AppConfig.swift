@@ -14,4 +14,5 @@ struct AppConfig: Codable {
     var workHours: [WorkHourRange] = []
     var isFirstLaunch: Bool = true
     var primaryColorHex: String = "FF8A3D"
+    var launchAtLogin: Bool = false
 }
