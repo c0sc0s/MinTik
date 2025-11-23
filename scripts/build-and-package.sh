@@ -25,6 +25,7 @@ BIN_DIR=$(swift build -c release --show-bin-path)
 # Create app bundle structure
 APP_DIR=build/"${APP_NAME}.app"
 echo "  → Creating app bundle structure..."
+rm -rf "${APP_DIR}"
 mkdir -p "${APP_DIR}/Contents/"{MacOS,Resources}
 
 # Copy executable
@@ -105,13 +106,11 @@ fi
 
 # Copy SwiftPM resource bundles (e.g., RestApp_RestApp.bundle)
 echo "  → Checking for SwiftPM resource bundles..."
+mkdir -p "${APP_DIR}/Contents/Resources"
 for BUNDLE_PATH in "${BIN_DIR}"/*_*.bundle; do
     if [ -d "$BUNDLE_PATH" ]; then
         BUNDLE_NAME=$(basename "$BUNDLE_PATH")
         echo "     • Found bundle: $BUNDLE_NAME"
-        # Copy to app root (as RestApp/resource accessor expects) and to Contents/Resources
-        cp -R "$BUNDLE_PATH" "${APP_DIR}/$BUNDLE_NAME"
-        mkdir -p "${APP_DIR}/Contents/Resources"
         cp -R "$BUNDLE_PATH" "${APP_DIR}/Contents/Resources/$BUNDLE_NAME"
     fi
 done
@@ -144,16 +143,22 @@ fi
 
 # Create DMG
 echo "📀 Creating DMG installer..."
-if ! command -v npm &> /dev/null; then
-    echo "Error: npm is required to run appdmg. Please install Node.js and npm."
-    exit 1
-fi
 
 # Install appdmg if not present (optional, npx handles it but good to check)
 # Using npx to run appdmg
 mkdir -p "${OUT_DIR}"
 rm -f "${OUT_DIR}/${APP_NAME}.dmg"
-npx --yes appdmg scripts/dmg.json "${OUT_DIR}/${APP_NAME}.dmg"
+if command -v npm &> /dev/null; then
+    npx --yes appdmg scripts/dmg.json "${OUT_DIR}/${APP_NAME}.dmg"
+else
+    echo "  ℹ️  npm 未安装，使用 hdiutil 生成基础 DMG"
+    TMP_DIR=$(mktemp -d)
+    mkdir -p "$TMP_DIR"
+    cp -R "${APP_DIR}" "$TMP_DIR/${APP_NAME}.app"
+    ln -s /Applications "$TMP_DIR/Applications"
+    hdiutil create -volname "${APP_NAME}" -srcfolder "$TMP_DIR" -ov -format UDZO "${OUT_DIR}/${APP_NAME}.dmg"
+    rm -rf "$TMP_DIR"
+fi
 
 # Staple DMG if notarization was used
 if [ -n "${NOTARY_PROFILE}" ] && [ -f "${OUT_DIR}/${APP_NAME}.dmg" ]; then
