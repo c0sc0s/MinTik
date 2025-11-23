@@ -39,10 +39,16 @@ jobs:
     needs: build-release
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare Pages content
+        run: |
+          touch web/.nojekyll
+          if [ -n "${CUSTOM_DOMAIN}" ]; then
+            echo "${CUSTOM_DOMAIN}" > web/CNAME
+          fi
+          ls -al web || true
       - name: Upload website artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: web
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
-

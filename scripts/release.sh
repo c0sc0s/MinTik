@@ -3,7 +3,8 @@
 set -euo pipefail
 
 # 配置
-VERSION=${1:-"v1.0.0-beta"}
+VERSION_ARG=${1:-""}
+BUMP=${BUMP:-patch}
 DMG_FILE="dist/MinTik.dmg"
 RELEASE_NOTES="RELEASE_NOTES.md"
 NOTARY_VALIDATE=${NOTARY_VALIDATE:-true}
@@ -11,7 +12,7 @@ DEPLOY_WEB=${DEPLOY_WEB:-true}
 
 echo "🚀 MinTik 自动化发布流程"
 echo "========================="
-echo "版本: $VERSION"
+echo "版本: 未确定，准备计算..."
 echo ""
 
 # 1. 检查 GitHub CLI
@@ -28,11 +29,36 @@ if ! gh auth status &> /dev/null; then
     gh auth login
 fi
 
-# 3. 检查 DMG 文件
+# 3. 计算版本（自动或使用入参）
+if [ -n "$VERSION_ARG" ] && [ "$VERSION_ARG" != "auto" ]; then
+    VERSION="$VERSION_ARG"
+else
+    LATEST_TAG=$(git tag -l 'v*' | sort -V | tail -n 1 || true)
+    if [ -z "$LATEST_TAG" ]; then
+        LATEST_TAG="v1.0.0"
+    fi
+    MAJOR=$(echo "${LATEST_TAG#v}" | cut -d. -f1)
+    MINOR=$(echo "${LATEST_TAG#v}" | cut -d. -f2)
+    PATCH=$(echo "${LATEST_TAG#v}" | cut -d. -f3)
+    case "$BUMP" in
+      major)
+        MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0 ;;
+      minor)
+        MINOR=$((MINOR+1)); PATCH=0 ;;
+      *)
+        PATCH=$((PATCH+1)) ;;
+    esac
+    VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+fi
+
+APP_VERSION="${VERSION#v}"
+echo "📦 将发布版本: $VERSION"
+echo ""
+
+# 4. 构建 DMG（若不存在则自动构建）
 if [ ! -f "$DMG_FILE" ]; then
-    echo "❌ 错误: 找不到 DMG 文件: $DMG_FILE"
-    echo "请先运行: bash scripts/build-and-package.sh"
-    exit 1
+    echo "🛠️  未找到 DMG，开始构建..."
+    bash scripts/build-and-package.sh MinTik "$APP_VERSION" dist
 fi
 
 DMG_SIZE=$(du -h "$DMG_FILE" | cut -f1)
@@ -52,7 +78,7 @@ if [ "$NOTARY_VALIDATE" = true ]; then
     fi
 fi
 
-# 4. 检查 Release Notes
+# 5. 检查 Release Notes
 if [ ! -f "$RELEASE_NOTES" ]; then
     echo "❌ 错误: 找不到 Release Notes: $RELEASE_NOTES"
     exit 1
@@ -61,7 +87,7 @@ fi
 echo "✅ 找到 Release Notes"
 echo ""
 
-# 5. 创建 Git Tag
+# 6. 创建 Git Tag
 echo "🏷️  创建 Git Tag: $VERSION"
 if git rev-parse "$VERSION" &> /dev/null; then
     echo "⚠️  Tag $VERSION 已存在，跳过创建"
@@ -72,7 +98,7 @@ else
 fi
 echo ""
 
-# 6. 创建 GitHub Release
+# 7. 创建 GitHub Release
 echo "📦 创建 GitHub Release..."
 gh release create "$VERSION" \
     "$DMG_FILE" \
@@ -89,7 +115,7 @@ echo ""
 echo "🌐 Release 页面:"
 echo "https://github.com/c0sc0s/MinTik/releases/tag/$VERSION"
 
-# 7. 可选：发布官网到 GitHub Pages（web/ 目录）
+# 8. 可选：发布官网到 GitHub Pages（web/ 目录）
 if [ "$DEPLOY_WEB" = true ]; then
     echo "🌐 部署官网到 GitHub Pages..."
     REPO_NAME_WITH_OWNER=$(gh repo view --json nameWithOwner -q .nameWithOwner || echo "")
