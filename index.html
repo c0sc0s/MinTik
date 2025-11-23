@@ -285,6 +285,39 @@
             /* 稍微上移一点 */
             filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
         }
+
+        .modal-card {
+            border: 1px solid rgba(255, 159, 28, 0.3);
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 16px;
+        }
+        .code-row {
+            display: flex;
+            align-items: stretch;
+            gap: 10px;
+        }
+        .code-row pre {
+            flex: 1;
+            overflow-x: auto;
+            white-space: pre;
+        }
+        .copy-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: rgba(255, 159, 28, 0.2);
+            border: 1px solid rgba(255, 159, 28, 0.4);
+            color: #fdb366;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .actions-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
     </style>
 </head>
 
@@ -324,6 +357,7 @@
         </div>
     </nav>
 
+
     <!-- 愿景区域 (Our Vision - 中文版) -->
     <section id="vision" class="relative pt-52 pb-16 overflow-hidden flex flex-col items-center">
         <div
@@ -353,8 +387,8 @@
 
         <div
             class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4 leading-tight tracking-tighter mt-12">
-            <button
-                class="bg-white text-black px-8 py-4 rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] btn-glow flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors">
+            <button type="button"
+                class="download-btn bg-white text-black px-8 py-4 rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] btn-glow flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors">
                 <i class="fab fa-apple text-xl"></i> Download
             </button>
         </div>
@@ -657,8 +691,8 @@
             <h2 class="text-3xl md:text-5xl font-bold mb-8">开始掌控你的时间。</h2>
             <div class="glass-panel p-10 rounded-3xl border border-orange-500/30 bg-black relative">
                 <div class="flex flex-col sm:flex-row justify-center gap-4">
-                    <button
-                        class="bg-white text-black px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
+                    <button type="button"
+                        class="download-btn bg-white text-black px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
                         <i class="fab fa-apple text-xl"></i> 下载 macOS 版
                     </button>
                     <button
@@ -670,6 +704,29 @@
             </div>
         </div>
     </section>
+
+    <div id="downloadModal" class="fixed inset-0 hidden z-[100]">
+        <div id="downloadModalOverlay" class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-6">
+            <div class="glass-panel modal-card max-w-lg w-full p-6 text-left shadow-2xl">
+                <div class="flex items-start gap-3">
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-orange-500 text-black text-xs font-bold">!</span>
+                    <div class="text-sm">
+                        <p class="text-orange-300 font-semibold">当前为 Beta，首次打开可能被系统拦截。</p>
+                        <p class="text-gray-300 mt-2">请先在终端执行：</p>
+                        <div class="mt-3 code-row">
+                            <pre class="bg-black/60 text-gray-100 text-xs font-mono p-3 rounded">sudo xattr -dr com.apple.quarantine /Applications/MinTik.app</pre>
+                            <button id="copy-quarantine-cmd" class="copy-btn"><i class="fas fa-copy"></i> 复制命令</button>
+                        </div>
+                        <div class="mt-5 actions-row">
+                            <button id="closeDownloadModal" class="px-4 py-2 rounded bg-gray-700 text-white text-sm hover:bg-gray-600">我知道了</button>
+                            <button id="continueDownloadBtn" class="px-4 py-2 rounded bg-orange-500 text-black text-sm font-semibold hover:bg-orange-400">已执行，继续下载</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <footer class="border-t border-gray-900 py-12 bg-black text-sm text-center text-gray-600">
         <p>&copy; 2025 MinTik Studio. Designed for Focus.</p>
@@ -952,6 +1009,84 @@
                 card.style.setProperty('--mouse-y', `${y}px`);
             });
         });
+
+        const copyBtn = document.getElementById('copy-quarantine-cmd');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', async () => {
+                const text = 'sudo xattr -dr com.apple.quarantine /Applications/MinTik.app';
+                try {
+                    await navigator.clipboard.writeText(text);
+                } catch (_) {
+                    const pre = copyBtn.previousElementSibling;
+                    if (pre) {
+                        const r = document.createRange();
+                        r.selectNodeContents(pre);
+                        const s = window.getSelection();
+                        s.removeAllRanges();
+                        s.addRange(r);
+                        document.execCommand('copy');
+                        s.removeAllRanges();
+                    }
+                }
+                const old = copyBtn.innerText;
+                copyBtn.innerText = '已复制';
+                copyBtn.disabled = true;
+                setTimeout(() => {
+                    copyBtn.innerText = old;
+                    copyBtn.disabled = false;
+                }, 1500);
+            });
+        }
+
+        const modal = document.getElementById('downloadModal');
+        const openers = document.querySelectorAll('.download-btn');
+        const closeBtn = document.getElementById('closeDownloadModal');
+        const overlay = document.getElementById('downloadModalOverlay');
+
+        function openModal() {
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal() {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+        openers.forEach(btn => btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            openModal();
+            return false;
+        }));
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (overlay) overlay.addEventListener('click', closeModal);
+
+        const REPO = 'c0sc0s/MinTik';
+        let latestDownloadUrl = '';
+        async function resolveLatestDownload() {
+            try {
+                const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
+                const data = await res.json();
+                if (Array.isArray(data.assets)) {
+                    const dmg = data.assets.find(a => /\.dmg$/i.test(a.name));
+                    if (dmg && dmg.browser_download_url) {
+                        latestDownloadUrl = dmg.browser_download_url;
+                    }
+                }
+            } catch (_) {
+                latestDownloadUrl = '';
+            }
+        }
+        resolveLatestDownload();
+
+        const continueBtn = document.getElementById('continueDownloadBtn');
+        if (continueBtn) {
+            continueBtn.addEventListener('click', () => {
+                closeModal();
+                const fallback = `https://github.com/${REPO}/releases/latest`;
+                window.location.href = latestDownloadUrl || fallback;
+            });
+        }
     </script>
 </body>
 
