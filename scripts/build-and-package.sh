@@ -34,6 +34,25 @@ cp "${BIN_DIR}/${APP_NAME}" "${APP_DIR}/Contents/MacOS/${APP_NAME}"
 # Make executable
 chmod +x "${APP_DIR}/Contents/MacOS/${APP_NAME}"
 
+# Add launcher script for debug logging
+cat >"${APP_DIR}/Contents/MacOS/start.sh" <<'LAUNCH'
+#!/usr/bin/env bash
+set -euo pipefail
+DIR="$(cd "$(dirname "$0")" && pwd)"
+LOG_DIR="$HOME/Library/Logs/MinTik"
+mkdir -p "$LOG_DIR"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+LOG_FILE="$LOG_DIR/run-$STAMP.log"
+{
+  echo "==== MinTik launch $STAMP ===="
+  echo "Executable: $DIR/MinTik"
+  echo "PWD: $(pwd)"
+} >>"$LOG_FILE"
+exec "$DIR/MinTik" "$@" >>"$LOG_FILE" 2>&1
+LAUNCH
+
+chmod +x "${APP_DIR}/Contents/MacOS/start.sh"
+
 # Create Info.plist
 echo "  → Generating Info.plist..."
 cat >"${APP_DIR}/Contents/Info.plist" <<EOF
@@ -46,7 +65,7 @@ cat >"${APP_DIR}/Contents/Info.plist" <<EOF
   <key>CFBundleDisplayName</key>
   <string>${APP_NAME}</string>
   <key>CFBundleExecutable</key>
-  <string>${APP_NAME}</string>
+  <string>start.sh</string>
   <key>CFBundleIdentifier</key>
   <string>${BUNDLE_ID}</string>
   <key>CFBundleVersion</key>
