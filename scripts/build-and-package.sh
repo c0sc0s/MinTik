@@ -65,7 +65,7 @@ cat >"${APP_DIR}/Contents/Info.plist" <<EOF
   <key>CFBundleDisplayName</key>
   <string>${APP_NAME}</string>
   <key>CFBundleExecutable</key>
-  <string>start.sh</string>
+  <string>${APP_NAME}</string>
   <key>CFBundleIdentifier</key>
   <string>${BUNDLE_ID}</string>
   <key>CFBundleVersion</key>
@@ -102,6 +102,19 @@ if [ -f "$ICON_SOURCE" ]; then
 else
     echo "  ⚠️  Warning: AppIcon.icns not found at $ICON_SOURCE"
 fi
+
+# Copy SwiftPM resource bundles (e.g., RestApp_RestApp.bundle)
+echo "  → Checking for SwiftPM resource bundles..."
+for BUNDLE_PATH in "${BIN_DIR}"/*_*.bundle; do
+    if [ -d "$BUNDLE_PATH" ]; then
+        BUNDLE_NAME=$(basename "$BUNDLE_PATH")
+        echo "     • Found bundle: $BUNDLE_NAME"
+        # Copy to app root (as RestApp/resource accessor expects) and to Contents/Resources
+        cp -R "$BUNDLE_PATH" "${APP_DIR}/$BUNDLE_NAME"
+        mkdir -p "${APP_DIR}/Contents/Resources"
+        cp -R "$BUNDLE_PATH" "${APP_DIR}/Contents/Resources/$BUNDLE_NAME"
+    fi
+done
 
 # Sign the app bundle
 echo "  → Signing app bundle..."

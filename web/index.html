@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MinTik - macOS 智能专注与健康助手</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>MinTik - macOS 智能专注与健康助手</title>
+        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23FF9F1C'/><stop offset='1' stop-color='%23FF6A00'/></linearGradient></defs><rect x='4' y='4' width='56' height='56' rx='14' fill='url(%23g)'/><path d='M22 44 L32 20 L42 44 Z' fill='%23fff' opacity='0.9'/><rect x='30' y='16' width='4' height='6' rx='2' fill='%23fff' opacity='0.9'/></svg>'">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
 
         :root {
@@ -1029,8 +1030,9 @@
         openers.forEach(btn => btn.addEventListener('click', async (e) => {
             e.preventDefault();
             if (!latestDownloadUrl) await resolveLatestDownload();
-            const fallback = `https://github.com/${REPO}/releases/latest/download/MinTik.dmg`;
-            triggerDirectDownload(latestDownloadUrl || fallback);
+            const fallback = `https://github.com/${REPO}/releases/download/${(await (async () => { try { const r = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`); const d = await r.json(); return d.tag_name || 'latest'; } catch(_) { return 'latest'; } })())}/MinTik.dmg`;
+            const url = latestDownloadUrl || fallback;
+            window.location.href = url;
         }));
 
         const REPO = 'c0sc0s/MinTik';
