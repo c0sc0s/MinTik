@@ -20,7 +20,7 @@ struct FocusSettingsView: View {
                     .padding(.top, 5)
             }
             
-            Text("设置")
+            Text("设置123")
                 .font(.system(size: 22, weight: .bold, design: .rounded))
                 .foregroundColor(textPrimary)
                 .padding(.top, vm.config.userName.isEmpty ? 10 : 0)
