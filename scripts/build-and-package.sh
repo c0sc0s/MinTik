@@ -6,12 +6,17 @@ set -euo pipefail
 APP_NAME=${1:-MinTik}
 VERSION=${2:-1.0}
 OUT_DIR=${3:-dist}
+BUNDLE_ID_PREFIX=${BUNDLE_ID_PREFIX:-com.example}
+CODESIGN_IDENTITY=${CODESIGN_IDENTITY:-}
+NOTARY_PROFILE=${NOTARY_PROFILE:-}
+TEAM_ID=${TEAM_ID:-}
 
 echo "🏗️  Building ${APP_NAME}..."
 
 # Build in release mode
 echo "  → Compiling release build..."
 BUNDLE_ID_SUFFIX=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]')
+BUNDLE_ID="${BUNDLE_ID_PREFIX}.${BUNDLE_ID_SUFFIX}"
 # Explicitly build first to ensure we have latest code
 swift build -c release
 
@@ -43,7 +48,7 @@ cat >"${APP_DIR}/Contents/Info.plist" <<EOF
   <key>CFBundleExecutable</key>
   <string>${APP_NAME}</string>
   <key>CFBundleIdentifier</key>
-  <string>com.example.${BUNDLE_ID_SUFFIX}</string>
+  <string>${BUNDLE_ID}</string>
   <key>CFBundleVersion</key>
   <string>1</string>
   <key>CFBundleShortVersionString</key>
@@ -79,12 +84,31 @@ else
     echo "  ⚠️  Warning: AppIcon.icns not found at $ICON_SOURCE"
 fi
 
-# Sign the app bundle (ad-hoc signing)
+# Sign the app bundle
 echo "  → Signing app bundle..."
-codesign --force --deep --sign - "${APP_DIR}"
+if [ -n "${CODESIGN_IDENTITY}" ]; then
+    codesign --force --deep --options runtime --timestamp --sign "${CODESIGN_IDENTITY}" "${APP_DIR}"
+else
+    echo "  ⚠️  未提供 CODESIGN_IDENTITY，执行临时签名（ad-hoc）。"
+    codesign --force --deep --sign - "${APP_DIR}"
+fi
 
 echo "✅ App bundle created: ${APP_DIR}"
 echo ""
+
+# Optional: notarize app before DMG
+if [ -n "${NOTARY_PROFILE}" ] && [ -n "${CODESIGN_IDENTITY}" ]; then
+    echo "🧾 Submitting for notarization..."
+    ZIP_PATH="${OUT_DIR}/${APP_NAME}.zip"
+    mkdir -p "${OUT_DIR}"
+    rm -f "${ZIP_PATH}"
+    /usr/bin/ditto -c -k --sequesterRsrc --keepParent "${APP_DIR}" "${ZIP_PATH}"
+    xcrun notarytool submit "${ZIP_PATH}" --keychain-profile "${NOTARY_PROFILE}" --wait
+    echo "📎 Stapling notarization ticket to app..."
+    xcrun stapler staple "${APP_DIR}" || true
+else
+    echo "  ℹ️  跳过公证：未配置 NOTARY_PROFILE 或未提供 CODESIGN_IDENTITY。"
+fi
 
 # Create DMG
 echo "📀 Creating DMG installer..."
@@ -98,5 +122,11 @@ fi
 mkdir -p "${OUT_DIR}"
 rm -f "${OUT_DIR}/${APP_NAME}.dmg"
 npx --yes appdmg scripts/dmg.json "${OUT_DIR}/${APP_NAME}.dmg"
+
+# Staple DMG if notarization was used
+if [ -n "${NOTARY_PROFILE}" ] && [ -f "${OUT_DIR}/${APP_NAME}.dmg" ]; then
+    echo "📎 Stapling notarization ticket to DMG..."
+    xcrun stapler staple "${OUT_DIR}/${APP_NAME}.dmg" || true
+fi
 
 echo "✅ DMG created successfully: ${OUT_DIR}/${APP_NAME}.dmg"

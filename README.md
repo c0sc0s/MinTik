@@ -36,6 +36,7 @@ MinTik 是一款极简的 macOS 专注时间管理工具，通过实时监测键
 
 ### 安装与运行
 
+#### 方式一：直接克隆运行
 1. 克隆仓库：
 ```bash
 git clone https://github.com/yourusername/MinTik.git
@@ -48,6 +49,39 @@ swift run
 ```
 
 或在 Xcode 中打开 `Package.swift`，选择 `RestApp` Scheme 直接运行 (`⌘R`)。
+
+#### 方式二：使用已打包的 DMG 安装
+1. 从 [GitHub Releases](https://github.com/yourusername/MinTik/releases) 下载最新的 `MinTik.dmg` 文件
+2. 双击打开 DMG 文件，将 MinTik 拖放到 Applications 文件夹
+3. 首次打开可能会遇到 "无法验证开发者" 或 "来自未确认开发者的应用" 的提示
+
+### 安装注意事项：
+
+#### 方法一：通过系统设置允许（推荐）
+1. 尝试直接打开 MinTik，您会看到"无法验证开发者"的提示
+2. 打开「系统设置」→ 「隐私与安全性」
+3. 在页面底部找到「安全性」部分，您会看到 MinTik 的提示
+4. 点击「仍要打开」按钮
+5. 在新弹出的窗口中再次点击「打开」
+
+#### 方法二：通过 Control+点击打开
+如果方法一无法解决，您可以尝试以下步骤：
+1. 按住 `Control` 键并点击 MinTik 应用图标
+2. 在弹出的菜单中选择 "打开"
+3. 在新弹出的窗口中再次点击 "打开"
+
+#### 方法三：永久移除隔离属性
+如果您希望完全移除这个提示，可以在终端中运行以下命令：
+```bash
+sudo xattr -dr com.apple.quarantine /Applications/MinTik.app
+```
+
+#### 针对 macOS Ventura 及以后版本的特殊说明
+在 macOS Ventura 及以后的版本中，默认隐藏了"允许任何来源"的选项。如果您遇到问题，可以通过以下终端命令启用该选项：
+```bash
+sudo spctl --master-disable
+```
+启用后，您将在「系统设置」→ 「隐私与安全性」→ 「通用」中看到"允许从以下位置下载的应用：任何来源"的选项。
 
 ### 首次使用
 
