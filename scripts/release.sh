@@ -6,7 +6,7 @@ set -euo pipefail
 VERSION_ARG=${1:-""}
 BUMP=${BUMP:-patch}
 DMG_FILE="dist/MinTik.dmg"
-RELEASE_NOTES="RELEASE_NOTES.md"
+RELEASE_NOTES="docs/RELEASE_NOTES.md"
 NOTARY_VALIDATE=${NOTARY_VALIDATE:-true}
 DEPLOY_WEB=${DEPLOY_WEB:-true}
 
