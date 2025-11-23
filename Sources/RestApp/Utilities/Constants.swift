@@ -7,8 +7,15 @@ extension Notification.Name {
 }
 
 func resourceURL(name: String, ext: String) -> URL? {
-    if let url = Bundle.module.url(forResource: name, withExtension: ext) { return url }
+    // 1. Try main bundle (Contents/Resources)
     if let url = Bundle.main.url(forResource: name, withExtension: ext) { return url }
-    if let base = Bundle.main.resourceURL { return base.appendingPathComponent("\(name).\(ext)") }
+    
+    // 2. Try RestApp_RestApp.bundle inside Contents/Resources
+    if let resourcePath = Bundle.main.resourceURL?.appendingPathComponent("RestApp_RestApp.bundle"),
+       let bundle = Bundle(url: resourcePath),
+       let url = bundle.url(forResource: name, withExtension: ext) {
+        return url
+    }
+    
     return nil
 }
