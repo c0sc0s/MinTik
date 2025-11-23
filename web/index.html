@@ -1034,29 +1034,28 @@
         }));
 
         const REPO = 'c0sc0s/MinTik';
-        let latestDownloadUrl = `https://github.com/${REPO}/releases/latest/download/MinTik.dmg`;
+        let latestDownloadUrl = '';
         async function resolveLatestDownload() {
             try {
-                // Probe direct latest download URL; if 404, fall back via API
-                const head = await fetch(latestDownloadUrl, { method: 'HEAD' });
-                if (!head.ok) {
-                    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
-                    const data = await res.json();
-                    if (Array.isArray(data.assets)) {
-                        const dmg = data.assets.find(a => /\.dmg$/i.test(a.name));
-                        if (dmg && dmg.browser_download_url) {
-                            latestDownloadUrl = dmg.browser_download_url;
-                        }
+                const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
+                const data = await res.json();
+                if (Array.isArray(data.assets)) {
+                    const dmg = data.assets.find(a => /\.dmg$/i.test(a.name));
+                    if (dmg && dmg.browser_download_url) {
+                        latestDownloadUrl = dmg.browser_download_url;
                     }
-                    if (!latestDownloadUrl && data.tag_name) {
-                        latestDownloadUrl = `https://github.com/${REPO}/releases/download/${data.tag_name}/MinTik.dmg`;
-                    }
+                }
+                if (!latestDownloadUrl && data.tag_name) {
+                    latestDownloadUrl = `https://github.com/${REPO}/releases/download/${data.tag_name}/MinTik.dmg`;
+                }
+                if (!latestDownloadUrl) {
+                    latestDownloadUrl = `https://github.com/${REPO}/releases/latest/download/MinTik.dmg`;
                 }
             } catch (_) {
                 latestDownloadUrl = '';
             }
         }
-        // Lazy resolution on first click; keep default latest/download path for instant download
+        resolveLatestDownload();
 
         function triggerDirectDownload(url) {
             const a = document.createElement('a');
