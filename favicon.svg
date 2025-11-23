@@ -1,0 +1,22 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="orange-gradient" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#FB923C" />
+            <stop offset="100%" stop-color="#EA580C" />
+        </linearGradient>
+    </defs>
+    
+    <!-- Background: Rounded Square -->
+    <rect x="0" y="0" width="512" height="512" rx="110" fill="url(#orange-gradient)" />
+    
+    <!-- Icon: Centered and Scaled -->
+    <!-- Original icon is 24x24. scaling it up to fit nicely in 512x512. 
+         Let's make it about 60% of the size -> 307px. 
+         Scale factor: 307/24 ≈ 12.8. 
+         Center offset: (512 - 307) / 2 = 102.5. -->
+    <g transform="translate(102.5, 102.5) scale(12.8)">
+        <path d="M2.27 21.7s9.87-3.5 12.73-6.36a4.5 4.5 0 0 0-6.36-6.37C5.77 11.84 2.27 21.7 2.27 21.7zM8.64 14l-2.05-2.04M15.34 15l-2.46-2.46" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M22 9s-1.33-2-3.5-2C16.86 7 15 9 15 9s1.33 2 3.5 2S22 9 22 9z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M15 2s-2 1.33-2 3.5S15 9 15 9s2-1.84 2-3.5C17 3.33 15 2 15 2z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+</svg>
