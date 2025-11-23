@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>MinTik - macOS 智能专注与健康助手</title>
-        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23FF9F1C'/><stop offset='1' stop-color='%23FF6A00'/></linearGradient></defs><rect x='4' y='4' width='56' height='56' rx='14' fill='url(%23g)'/><path d='M22 44 L32 20 L42 44 Z' fill='%23fff' opacity='0.9'/><rect x='30' y='16' width='4' height='6' rx='2' fill='%23fff' opacity='0.9'/></svg>'">
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-        <style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MinTik - macOS 智能专注与健康助手</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23FF9F1C'/><stop offset='1' stop-color='%23FF6A00'/></linearGradient></defs><rect x='4' y='4' width='56' height='56' rx='14' fill='url(%23g)'/><path d='M22 44 L32 20 L42 44 Z' fill='%23fff' opacity='0.9'/><rect x='30' y='16' width='4' height='6' rx='2' fill='%23fff' opacity='0.9'/></svg>'">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
 
         :root {
@@ -292,16 +293,19 @@
             background: rgba(0, 0, 0, 0.8);
             border-radius: 16px;
         }
+
         .code-row {
             display: flex;
             align-items: stretch;
             gap: 10px;
         }
+
         .code-row pre {
             flex: 1;
             overflow-x: auto;
             white-space: pre;
         }
+
         .copy-btn {
             display: inline-flex;
             align-items: center;
@@ -314,6 +318,7 @@
             font-size: 12px;
             white-space: nowrap;
         }
+
         .actions-row {
             display: flex;
             justify-content: flex-end;
@@ -685,13 +690,17 @@
             <div class="glass-panel p-10 rounded-3xl border border-orange-500/30 bg-black relative">
                 <div class="glass-panel rounded-xl border border-red-500/40 bg-red-500/10 p-4 mb-5 text-left">
                     <div class="flex items-start gap-3">
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-orange-500 text-black text-xs font-bold">!</span>
+                        <span
+                            class="inline-flex items-center justify-center w-6 h-6 rounded bg-orange-500 text-black text-xs font-bold">!</span>
                         <div class="text-xs sm:text-sm">
                             <p class="text-orange-300 font-semibold">当前为 Beta，首次打开可能被系统拦截。</p>
                             <p class="text-gray-300 mt-1">请在打开 App 前执行以下命令关闭互联网隔离：</p>
                             <div class="mt-2 flex items-center gap-3">
-                                <pre class="bg-black/40 text-gray-100 text-xs font-mono p-3 rounded">sudo xattr -dr com.apple.quarantine /Applications/MinTik.app</pre>
-                                <button id="copy-quarantine-cmd" class="px-3 py-2 rounded bg-orange-500/20 text-orange-300 text-xs border border-orange-500/40 hover:bg-orange-500/30 flex items-center gap-2"><i class="fas fa-copy"></i> 复制命令</button>
+                                <pre
+                                    class="bg-black/40 text-gray-100 text-xs font-mono p-3 rounded">sudo xattr -dr com.apple.quarantine /Applications/MinTik.app</pre>
+                                <button id="copy-quarantine-cmd"
+                                    class="px-3 py-2 rounded bg-orange-500/20 text-orange-300 text-xs border border-orange-500/40 hover:bg-orange-500/30 flex items-center gap-2"><i
+                                        class="fas fa-copy"></i> 复制命令</button>
                             </div>
                         </div>
                     </div>
@@ -711,7 +720,7 @@
         </div>
     </section>
 
-    
+
 
     <footer class="border-t border-gray-900 py-12 bg-black text-sm text-center text-gray-600">
         <p>&copy; 2025 MinTik Studio. Designed for Focus.</p>
@@ -1030,7 +1039,7 @@
         openers.forEach(btn => btn.addEventListener('click', async (e) => {
             e.preventDefault();
             if (!latestDownloadUrl) await resolveLatestDownload();
-            const fallback = `https://github.com/${REPO}/releases/download/${(await (async () => { try { const r = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`); const d = await r.json(); return d.tag_name || 'latest'; } catch(_) { return 'latest'; } })())}/MinTik.dmg`;
+            const fallback = `https://github.com/${REPO}/releases/download/${(await (async () => { try { const r = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=1`); const d = await r.json(); return d[0]?.tag_name || 'latest'; } catch (_) { return 'latest'; } })())}/MinTik.dmg`;
             const url = latestDownloadUrl || fallback;
             window.location.href = url;
         }));
@@ -1039,8 +1048,15 @@
         let latestDownloadUrl = '';
         async function resolveLatestDownload() {
             try {
-                const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
-                const data = await res.json();
+                // 修改：获取所有 releases 列表（取第一个），而不仅仅是 latest（正式版）
+                const response = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=1`);
+                if (!response.ok) throw new Error('Network response was not ok');
+
+                const releases = await response.json();
+                const data = releases[0]; // 取最新的一个版本（可能是 Pre-release）
+
+                if (!data) return;
+
                 if (Array.isArray(data.assets)) {
                     const dmg = data.assets.find(a => /\.dmg$/i.test(a.name));
                     if (dmg && dmg.browser_download_url) {
