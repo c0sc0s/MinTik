@@ -384,14 +384,6 @@
                 我们相信专注是一种韵律，而非短跑冲刺。MinTik 默默地将你的心流可视化，助你在深度工作与正念休憩之间找到完美的平衡。
             </p>
         </div>
-
-        <div
-            class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4 leading-tight tracking-tighter mt-12">
-            <button type="button"
-                class="download-btn bg-white text-black px-8 py-4 rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] btn-glow flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors">
-                <i class="fab fa-apple text-xl"></i> Download
-            </button>
-        </div>
     </section>
 
     <!-- Hero 区域 -->
@@ -491,7 +483,7 @@
                     <li class="flex items-center gap-3">
                         <i class="fas fa-check text-orange-500"></i> 隐私优先，数据仅存储在本地
                     </li>
-                    <li class="flex items-center gap-3">
+                    <li class="flex items-center  gap-3">
                         <i class="fas fa-check text-orange-500"></i> 键盘党福音，全快捷键支持
                     </li>
                 </ul>
@@ -690,43 +682,35 @@
         <div class="max-w-4xl mx-auto px-6 text-center reveal">
             <h2 class="text-3xl md:text-5xl font-bold mb-8">开始掌控你的时间。</h2>
             <div class="glass-panel p-10 rounded-3xl border border-orange-500/30 bg-black relative">
+                <div class="glass-panel rounded-xl border border-red-500/40 bg-red-500/10 p-4 mb-5 text-left">
+                    <div class="flex items-start gap-3">
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-orange-500 text-black text-xs font-bold">!</span>
+                        <div class="text-xs sm:text-sm">
+                            <p class="text-orange-300 font-semibold">当前为 Beta，首次打开可能被系统拦截。</p>
+                            <p class="text-gray-300 mt-1">请在打开 App 前执行以下命令关闭互联网隔离：</p>
+                            <div class="mt-2 flex items-center gap-3">
+                                <pre class="bg-black/40 text-gray-100 text-xs font-mono p-3 rounded">sudo xattr -dr com.apple.quarantine /Applications/MinTik.app</pre>
+                                <button id="copy-quarantine-cmd" class="px-3 py-2 rounded bg-orange-500/20 text-orange-300 text-xs border border-orange-500/40 hover:bg-orange-500/30 flex items-center gap-2"><i class="fas fa-copy"></i> 复制命令</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="flex flex-col sm:flex-row justify-center gap-4">
                     <button type="button"
                         class="download-btn bg-white text-black px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
-                        <i class="fab fa-apple text-xl"></i> 下载 macOS 版
+                        <i class="fab fa-apple text-xl"></i> Beta 版本下载
                     </button>
-                    <button
+                    <!-- <button
                         class="border border-gray-600 px-8 py-4 rounded-xl font-bold text-lg hover:border-white hover:text-white text-gray-400 transition-colors">
                         加入内测群
-                    </button>
+                    </button> -->
                 </div>
                 <p class="text-xs text-gray-600 mt-6 font-mono">适用于 macOS Monterey 12.0 或更高版本</p>
             </div>
         </div>
     </section>
 
-    <div id="downloadModal" class="fixed inset-0 hidden z-[100]">
-        <div id="downloadModalOverlay" class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
-        <div class="absolute inset-0 flex items-center justify-center p-6">
-            <div class="glass-panel modal-card max-w-lg w-full p-6 text-left shadow-2xl">
-                <div class="flex items-start gap-3">
-                    <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-orange-500 text-black text-xs font-bold">!</span>
-                    <div class="text-sm">
-                        <p class="text-orange-300 font-semibold">当前为 Beta，首次打开可能被系统拦截。</p>
-                        <p class="text-gray-300 mt-2">请先在终端执行：</p>
-                        <div class="mt-3 code-row">
-                            <pre class="bg-black/60 text-gray-100 text-xs font-mono p-3 rounded">sudo xattr -dr com.apple.quarantine /Applications/MinTik.app</pre>
-                            <button id="copy-quarantine-cmd" class="copy-btn"><i class="fas fa-copy"></i> 复制命令</button>
-                        </div>
-                        <div class="mt-5 actions-row">
-                            <button id="closeDownloadModal" class="px-4 py-2 rounded bg-gray-700 text-white text-sm hover:bg-gray-600">我知道了</button>
-                            <button id="continueDownloadBtn" class="px-4 py-2 rounded bg-orange-500 text-black text-sm font-semibold hover:bg-orange-400">已执行，继续下载</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    
 
     <footer class="border-t border-gray-900 py-12 bg-black text-sm text-center text-gray-600">
         <p>&copy; 2025 MinTik Studio. Designed for Focus.</p>
@@ -1040,52 +1024,50 @@
 
         const modal = document.getElementById('downloadModal');
         const openers = document.querySelectorAll('.download-btn');
-        const closeBtn = document.getElementById('closeDownloadModal');
         const overlay = document.getElementById('downloadModalOverlay');
 
-        function openModal() {
-            modal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
-        function closeModal() {
-            modal.classList.add('hidden');
-            document.body.style.overflow = '';
-        }
-        openers.forEach(btn => btn.addEventListener('click', (e) => {
+        openers.forEach(btn => btn.addEventListener('click', async (e) => {
             e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            openModal();
-            return false;
+            if (!latestDownloadUrl) await resolveLatestDownload();
+            const fallback = `https://github.com/${REPO}/releases/latest/download/MinTik.dmg`;
+            triggerDirectDownload(latestDownloadUrl || fallback);
         }));
-        if (closeBtn) closeBtn.addEventListener('click', closeModal);
-        if (overlay) overlay.addEventListener('click', closeModal);
 
         const REPO = 'c0sc0s/MinTik';
-        let latestDownloadUrl = '';
+        let latestDownloadUrl = `https://github.com/${REPO}/releases/latest/download/MinTik.dmg`;
         async function resolveLatestDownload() {
             try {
-                const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
-                const data = await res.json();
-                if (Array.isArray(data.assets)) {
-                    const dmg = data.assets.find(a => /\.dmg$/i.test(a.name));
-                    if (dmg && dmg.browser_download_url) {
-                        latestDownloadUrl = dmg.browser_download_url;
+                // Probe direct latest download URL; if 404, fall back via API
+                const head = await fetch(latestDownloadUrl, { method: 'HEAD' });
+                if (!head.ok) {
+                    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
+                    const data = await res.json();
+                    if (Array.isArray(data.assets)) {
+                        const dmg = data.assets.find(a => /\.dmg$/i.test(a.name));
+                        if (dmg && dmg.browser_download_url) {
+                            latestDownloadUrl = dmg.browser_download_url;
+                        }
+                    }
+                    if (!latestDownloadUrl && data.tag_name) {
+                        latestDownloadUrl = `https://github.com/${REPO}/releases/download/${data.tag_name}/MinTik.dmg`;
                     }
                 }
             } catch (_) {
                 latestDownloadUrl = '';
             }
         }
-        resolveLatestDownload();
+        // Lazy resolution on first click; keep default latest/download path for instant download
 
-        const continueBtn = document.getElementById('continueDownloadBtn');
-        if (continueBtn) {
-            continueBtn.addEventListener('click', () => {
-                closeModal();
-                const fallback = `https://github.com/${REPO}/releases/latest`;
-                window.location.href = latestDownloadUrl || fallback;
-            });
+        function triggerDirectDownload(url) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.rel = 'noopener';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+            }, 1000);
         }
     </script>
 </body>
