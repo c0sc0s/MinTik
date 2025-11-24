@@ -32,9 +32,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             broadcastNotificationSettings()
             requestNotificationPermission()
         }
-        NotificationCenter.default.addObserver(self, selector: #selector(handleStatusUpdate(_:)), name: .restAppStatusUpdate, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleHideRequest), name: .restAppRequestHide, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleOnboardingCompleted), name: Notification.Name("RestAppOnboardingCompleted"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleStatusUpdate(_:)), name: .MinTikStatusUpdate, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleHideRequest), name: .MinTikRequestHide, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleOnboardingCompleted), name: Notification.Name("MinTikOnboardingCompleted"), object: nil)
         
         DispatchQueue.main.async {
             if !FocusViewModel.shared.config.isFirstLaunch {
@@ -167,7 +167,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc private func handleOnboardingCompleted() {
         NSApplication.shared.windows.first?.orderOut(nil)
-        if let button = statusItem?.button {
+        if statusItem?.button != nil {
             togglePopover()
         }
     }
@@ -218,7 +218,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func broadcastNotificationSettings() {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             NotificationCenter.default.post(
-                name: .restAppNotificationStatusChanged,
+                name: .MinTikNotificationStatusChanged,
                 object: nil,
                 userInfo: ["status": settings.authorizationStatus.rawValue]
             )

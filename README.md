@@ -48,7 +48,7 @@ cd MinTik
 swift run
 ```
 
-或在 Xcode 中打开 `Package.swift`，选择 `RestApp` Scheme 直接运行 (`⌘R`)。
+或在 Xcode 中打开 `Package.swift`，选择 `MinTik` Scheme 直接运行 (`⌘R`)。
 
 #### 方式二：使用已打包的 DMG 安装
 1. 从 [GitHub Releases](https://github.com/yourusername/MinTik/releases) 下载最新的 `MinTik.dmg` 文件
@@ -94,7 +94,7 @@ sudo spctl --master-disable
 
 - 修改 `AppConfig` 以设置默认专注阈值、活跃/休息判定。
 - 调整 `FocusDashboardView` 的颜色与阴影，获得不同的视觉风格。
-- 状态栏文本由 `Notification.Name.restAppStatusUpdate` 驱动，如需改造菜单或图标，可在 `AppDelegate` 中扩展。
+- 状态栏文本由 `Notification.Name.MinTikStatusUpdate` 驱动，如需改造菜单或图标，可在 `AppDelegate` 中扩展。
 
 欢迎继续拓展，例如添加提醒通知、历史统计或导出功能。
 
@@ -111,7 +111,7 @@ sudo spctl --master-disable
 ```
 MinTik/
 ├── Sources/
-│   └── RestApp/          # 主要源代码
+│   └── MinTik/          # 主要源代码
 ├── resources/            # 资源文件
 ├── scripts/              # 构建脚本
 ├── Package.swift         # SPM 配置文件

@@ -230,7 +230,7 @@ struct OnboardingView: View {
                     .shadow(color: .white.opacity(0.3), radius: 10, x: 0, y: 0)
                     .offset(y: floatingOffset)
                 
-                Text("RestApp 需要通知权限来提醒你休息。\n我们保证只在必要时打扰。")
+                Text("MinTik 需要通知权限来提醒你休息。\n我们保证只在必要时打扰。")
                     .font(.system(size: 14, weight: .regular, design: .rounded))
                     .multilineTextAlignment(.center)
                     .foregroundColor(.white.opacity(0.7))

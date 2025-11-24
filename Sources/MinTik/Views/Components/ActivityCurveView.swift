@@ -55,7 +55,7 @@ struct ActivityCurveView: View {
                 }
             }
             let startHour = first / 60
-            var xStart = startHour * 60
+            let xStart = startHour * 60
             var xEnd: Int
             if isTodayFlag {
                 let currentHour = Calendar.current.component(.hour, from: Date())

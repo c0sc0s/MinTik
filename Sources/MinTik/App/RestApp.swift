@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct RestApp: App {
+struct MinTik: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     var body: some Scene {

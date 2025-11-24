@@ -43,7 +43,7 @@ enum NotificationPermissionState: Equatable {
     var bannerContent: (title: String, detail: String, actionTitle: String?)? {
         switch self {
         case .denied:
-            return ("系统通知已关闭", "前往 系统设置 > 通知 > RestApp，允许提醒以便准时休息。", "前往设置")
+            return ("系统通知已关闭", "前往 系统设置 > 通知 > MinTik，允许提醒以便准时休息。", "前往设置")
         default:
             return nil
         }

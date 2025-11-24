@@ -1,13 +1,13 @@
-# RestApp 数据存储架构文档
+# MinTik 数据存储架构文档
 
 ## 概述
 
-RestApp 使用双层 JSON 文件存储系统来追踪用户的活跃时间和休息模式。所有数据持久化到本地文件，无需外部数据库。
+MinTik 使用双层 JSON 文件存储系统来追踪用户的活跃时间和休息模式。所有数据持久化到本地文件，无需外部数据库。
 
 ## 存储位置
 
 ```
-~/Library/Application Support/RestApp/
+~/Library/Application Support/MinTik/
 ├── activity.json           # 当前会话状态（实时数据）
 └── daily_activities.json   # 历史每日数据（永久保存）
 ```
@@ -179,7 +179,7 @@ if didMutate || Calendar.current.component(.second, from: Date()) == 0 {
 
 ```swift
 private let persistenceQueue = DispatchQueue(
-    label: "com.restapp.persistence", 
+    label: "com.MinTik.persistence", 
     qos: .utility
 )
 
@@ -200,7 +200,7 @@ persistenceQueue.async {
 
 ### 自动保存触发场景
 
-RestApp 在以下所有场景都会自动保存数据，确保零数据丢失：
+MinTik 在以下所有场景都会自动保存数据，确保零数据丢失：
 
 #### 1. 正常运行时
 - **每秒更新**：`syncCurrentHourFromMinuteActivity()` 同步当前小时数据
@@ -361,30 +361,30 @@ vm.appState  // .active | .warning | .idle | .paused
 
 ```bash
 # 格式化查看每日历史数据
-python3 -m json.tool ~/Library/Application\ Support/RestApp/daily_activities.json
+python3 -m json.tool ~/Library/Application\ Support/MinTik/daily_activities.json
 
 # 格式化查看当前会话
-python3 -m json.tool ~/Library/Application\ Support/RestApp/activity.json
+python3 -m json.tool ~/Library/Application\ Support/MinTik/activity.json
 
 # 查看文件大小
-ls -lh ~/Library/Application\ Support/RestApp/
+ls -lh ~/Library/Application\ Support/MinTik/
 ```
 
 ### 备份数据
 
 ```bash
 # 备份所有数据
-cp -r ~/Library/Application\ Support/RestApp ~/Desktop/RestApp_Backup_$(date +%Y%m%d)
+cp -r ~/Library/Application\ Support/MinTik ~/Desktop/MinTik_Backup_$(date +%Y%m%d)
 ```
 
 ### 清空数据（测试用）
 
 ```bash
 # 删除所有数据文件
-rm ~/Library/Application\ Support/RestApp/*.json
+rm ~/Library/Application\ Support/MinTik/*.json
 
 # 或删除整个文件夹
-rm -rf ~/Library/Application\ Support/RestApp/
+rm -rf ~/Library/Application\ Support/MinTik/
 ```
 
 ## 未来扩展
@@ -416,7 +416,7 @@ rm -rf ~/Library/Application\ Support/RestApp/
 
 ## 总结
 
-RestApp 的数据存储系统设计简洁高效：
+MinTik 的数据存储系统设计简洁高效：
 
 - **双文件分离**：实时状态 + 历史数据
 - **每分钟保存**：数据安全有保障

@@ -82,19 +82,19 @@ cat >"${APP_DIR}/Contents/Info.plist" <<EOF
   <key>LSUIElement</key>
   <false/>
   <key>NSUserNotificationsUsageDescription</key>
-  <string>RestApp 需要通知权限来提醒你休息。</string>
+  <string>MinTik 需要通知权限来提醒你休息。</string>
 </dict>
 </plist>
 EOF
 
 # Copy resources if they exist
-if [ -d "Sources/RestApp/Resources" ]; then
+if [ -d "Sources/MinTik/Resources" ]; then
     echo "  → Copying app resources..."
-    cp -R Sources/RestApp/Resources/* "${APP_DIR}/Contents/Resources/" 2>/dev/null || true
+    cp -R Sources/MinTik/Resources/* "${APP_DIR}/Contents/Resources/" 2>/dev/null || true
 fi
 
 # Ensure app icon is copied and referenced
-ICON_SOURCE="Sources/RestApp/Resources/AppIcon.icns"
+ICON_SOURCE="Sources/MinTik/Resources/AppIcon.icns"
 if [ -f "$ICON_SOURCE" ]; then
     echo "  → Adding app icon..."
     cp "$ICON_SOURCE" "${APP_DIR}/Contents/Resources/AppIcon.icns"
@@ -104,7 +104,7 @@ else
     echo "  ⚠️  Warning: AppIcon.icns not found at $ICON_SOURCE"
 fi
 
-# Copy SwiftPM resource bundles (e.g., RestApp_RestApp.bundle)
+# Copy SwiftPM resource bundles (e.g., MinTik_MinTik.bundle)
 echo "  → Checking for SwiftPM resource bundles..."
 mkdir -p "${APP_DIR}/Contents/Resources"
 for BUNDLE_PATH in "${BIN_DIR}"/*_*.bundle; do

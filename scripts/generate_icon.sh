@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
 
-SVG_FILE="Sources/RestApp/Resources/MinTik_Logo.svg"
+SVG_FILE="Sources/MinTik/Resources/MinTik_Logo.svg"
 ICONSET_DIR="AppIcon.iconset"
-OUTPUT_ICNS="Sources/RestApp/Resources/AppIcon.icns"
+OUTPUT_ICNS="Sources/MinTik/Resources/AppIcon.icns"
 
 if [ ! -f "$SVG_FILE" ]; then
     echo "Error: SVG file not found at $SVG_FILE"

@@ -17,6 +17,7 @@ class FocusViewModel: ObservableObject {
     @Published var selectedDate: Date = Date()  // For analytics view
     
     private var screenOffTimestamp: Date?
+    private var lastSaveTimestamp: Date = Date()
     var restStartTime: Date? // Internal for AnalyticsView access
     private var currentDayString: String = ""
     
@@ -24,7 +25,7 @@ class FocusViewModel: ObservableObject {
     private var lastTickHour: Int = Calendar.current.component(.hour, from: Date())
     private var hasDispatchedWarningNotification = false
     private var notificationStatusObserver: NSObjectProtocol?
-    private let persistenceQueue = DispatchQueue(label: "com.restapp.persistence", qos: .utility)
+    private let persistenceQueue = DispatchQueue(label: "com.MinTik.persistence", qos: .utility)
     private var cancellables: Set<AnyCancellable> = []
     private let defaults = UserDefaults.standard
     private let kDuration = "config.duration"
@@ -33,7 +34,7 @@ class FocusViewModel: ObservableObject {
     private lazy var persistenceURL: URL = {
         let fm = FileManager.default
         let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first ?? fm.homeDirectoryForCurrentUser
-        let dir = base.appendingPathComponent("RestApp", isDirectory: true)
+        let dir = base.appendingPathComponent("MinTik", isDirectory: true)
         if !fm.fileExists(atPath: dir.path) {
             try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
         }
@@ -104,6 +105,8 @@ class FocusViewModel: ObservableObject {
                         workTime = 0
                         didMutate = true
                         hasDispatchedWarningNotification = false
+                        triggerPeriodicSave()
+                        lastSaveTimestamp = Date()
                     }
                 } else {
                     // Screen off but not yet idle -> Paused
@@ -113,7 +116,6 @@ class FocusViewModel: ObservableObject {
                 }
             }
             notifyStatusBar()
-            if didMutate { persistActivity() }
             return
         }
         
@@ -141,7 +143,7 @@ class FocusViewModel: ObservableObject {
         if systemIdleSeconds >= config.restDuration {
             if appState != .idle {
                 // End of focus session
-                if let start = restStartTime {
+                if restStartTime != nil {
                      // This case handles if we were already tracking a rest, but appState wasn't idle (shouldn't happen often)
                      // Actually, if we are entering idle, the previous state was active/warning/paused (Focus)
                 }
@@ -161,9 +163,10 @@ class FocusViewModel: ObservableObject {
                 workTime = 0
                 didMutate = true
                 hasDispatchedWarningNotification = false
+                triggerPeriodicSave()
+                lastSaveTimestamp = Date()
             }
             notifyStatusBar()
-            if didMutate { persistActivity() }
             return 
         }
         
@@ -177,6 +180,8 @@ class FocusViewModel: ObservableObject {
                     dailyActivities[currentDayString]?.recordRestSession(startTime: start, duration: cappedDuration)
                     restStartTime = nil
                     didMutate = true
+                    triggerPeriodicSave()
+                    lastSaveTimestamp = Date()
                 }
                 appState = .active
             }
@@ -217,14 +222,15 @@ class FocusViewModel: ObservableObject {
             }
         }
         
-        if didMutate { persistActivity() }
-        
         // Update current hour with latest minute activity data
         syncCurrentHourFromMinuteActivity()
         
-        // Save daily activities periodically (every minute when data changes)
-        if didMutate || Calendar.current.component(.second, from: Date()) == 0 {
-            saveDailyActivities()
+        if didMutate {
+            let now = Date()
+            if now.timeIntervalSince(lastSaveTimestamp) >= 300 { // Save every 5 minutes
+                triggerPeriodicSave()
+                lastSaveTimestamp = now
+            }
         }
         
         notifyStatusBar()
@@ -276,10 +282,16 @@ class FocusViewModel: ObservableObject {
     func completeOnboarding() {
         config.isFirstLaunch = false
         saveConfig()
-        NotificationCenter.default.post(name: Notification.Name("RestAppOnboardingCompleted"), object: nil)
+        NotificationCenter.default.post(name: Notification.Name("MinTikOnboardingCompleted"), object: nil)
     }
     
     // MARK: - Public Save Method
+    
+    private func triggerPeriodicSave() {
+        syncCurrentHourFromMinuteActivity()
+        persistActivity()
+        saveDailyActivities()
+    }
     
     /// Save all data immediately (called on app exit, sleep, shutdown)
     func saveAllData() {
@@ -380,7 +392,7 @@ class FocusViewModel: ObservableObject {
             state = "active"
         }
         NotificationCenter.default.post(
-            name: .restAppStatusUpdate,
+            name: .MinTikStatusUpdate,
             object: nil,
             userInfo: ["minutes": minutes, "state": state]
         )
@@ -388,7 +400,7 @@ class FocusViewModel: ObservableObject {
     
     private func observeNotificationStatusChanges() {
         guard NotificationAvailability.isAvailable else { return }
-        notificationStatusObserver = NotificationCenter.default.addObserver(forName: .restAppNotificationStatusChanged, object: nil, queue: .main) { [weak self] notification in
+        notificationStatusObserver = NotificationCenter.default.addObserver(forName: .MinTikNotificationStatusChanged, object: nil, queue: .main) { [weak self] notification in
             guard let raw = notification.userInfo?["status"] as? Int,
                   let status = UNAuthorizationStatus(rawValue: raw) else { return }
             self?.notificationState = NotificationPermissionState(status: status)
@@ -420,7 +432,7 @@ class FocusViewModel: ObservableObject {
         content.sound = .default
         
         let request = UNNotificationRequest(
-            identifier: "restapp.warning.\(UUID().uuidString)",
+            identifier: "MinTik.warning.\(UUID().uuidString)",
             content: content,
             trigger: nil
         )
@@ -488,6 +500,8 @@ class FocusViewModel: ObservableObject {
                 restStartTime = screenOffTimestamp
                 appState = .idle
                 workTime = 0
+                triggerPeriodicSave()
+                lastSaveTimestamp = Date()
                 notifyStatusBar()
             }
         }
@@ -540,7 +554,7 @@ class FocusViewModel: ObservableObject {
     private func loadDailyActivities() {
         let fm = FileManager.default
         let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first ?? fm.homeDirectoryForCurrentUser
-        let dir = base.appendingPathComponent("RestApp", isDirectory: true)
+        let dir = base.appendingPathComponent("MinTik", isDirectory: true)
         let dailyURL = dir.appendingPathComponent("daily_activities.json")
         
         guard let data = try? Data(contentsOf: dailyURL),
@@ -555,7 +569,7 @@ class FocusViewModel: ObservableObject {
     private func saveDailyActivities() {
         let fm = FileManager.default
         let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first ?? fm.homeDirectoryForCurrentUser
-        let dir = base.appendingPathComponent("RestApp", isDirectory: true)
+        let dir = base.appendingPathComponent("MinTik", isDirectory: true)
         let dailyURL = dir.appendingPathComponent("daily_activities.json")
         
         persistenceQueue.async { [dailyActivities] in
@@ -594,7 +608,7 @@ class FocusViewModel: ObservableObject {
             
             // Delete daily_activities.json
             let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first ?? fm.homeDirectoryForCurrentUser
-            let dir = base.appendingPathComponent("RestApp", isDirectory: true)
+            let dir = base.appendingPathComponent("MinTik", isDirectory: true)
             let dailyURL = dir.appendingPathComponent("daily_activities.json")
             try? fm.removeItem(at: dailyURL)
             
