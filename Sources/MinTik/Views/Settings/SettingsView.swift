@@ -207,7 +207,18 @@ struct FocusSettingsView: View {
                         secondaryButton: .cancel(Text("取消"))
                     )
                 }
+
             }
+            
+            // App Version Footer
+            HStack {
+                Spacer()
+                Text("Version \(appVersion)")
+                    .font(.system(size: 10))
+                    .foregroundColor(textSecondary.opacity(0.4))
+                Spacer()
+            }
+            .padding(.top, 10)
 
             Spacer()
         }
@@ -243,6 +254,10 @@ struct FocusSettingsView: View {
         case .unknown:
             return "未知"
         }
+    }
+    
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
     }
     
 
