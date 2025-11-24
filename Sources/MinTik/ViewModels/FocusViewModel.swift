@@ -2,6 +2,7 @@ import SwiftUI
 import CoreGraphics
 import UserNotifications
 import Combine
+import os
 
 class FocusViewModel: ObservableObject {
     @Published var appState: AppState = .active
@@ -102,6 +103,7 @@ class FocusViewModel: ObservableObject {
                         // This avoids double-counting rest time
                         restStartTime = screenOffTimestamp // Rest started when screen went off
                         appState = .idle
+                        Logger.focus.notice("State changed to IDLE (Screen Off). WorkTime: \(self.workTime)")
                         workTime = 0
                         didMutate = true
                         hasDispatchedWarningNotification = false
@@ -112,6 +114,7 @@ class FocusViewModel: ObservableObject {
                     // Screen off but not yet idle -> Paused
                     if appState == .active || appState == .warning {
                         appState = .paused
+                        Logger.focus.notice("State changed to PAUSED (Screen Off)")
                     }
                 }
             }
@@ -160,6 +163,7 @@ class FocusViewModel: ObservableObject {
                 // Rest started when user stopped input
                 restStartTime = Date().addingTimeInterval(-systemIdleSeconds)
                 appState = .idle
+                Logger.focus.notice("State changed to IDLE (User Inactive). WorkTime: \(self.workTime)")
                 workTime = 0
                 didMutate = true
                 hasDispatchedWarningNotification = false
@@ -184,8 +188,12 @@ class FocusViewModel: ObservableObject {
                     lastSaveTimestamp = Date()
                 }
                 appState = .active
+                Logger.focus.notice("State changed to ACTIVE (User Active)")
             }
-            if appState == .paused { appState = (Double(workTime) >= config.duration * 60) ? .warning : .active }
+            if appState == .paused { 
+                appState = (Double(workTime) >= config.duration * 60) ? .warning : .active 
+                Logger.focus.notice("State changed from PAUSED to \(self.appState == .warning ? "WARNING" : "ACTIVE")")
+            }
             
             if appState == .active || appState == .warning {
                 workTime += 1
@@ -197,6 +205,7 @@ class FocusViewModel: ObservableObject {
                 if workTime >= limitSeconds {
                     if appState != .warning {
                         appState = .warning
+                        Logger.focus.warning("State changed to WARNING (Time Limit Reached)")
                     }
                     if currentMinute < 60 {
                         let overrun = max(0, workTime - limitSeconds)
@@ -213,12 +222,14 @@ class FocusViewModel: ObservableObject {
                     // Fix: If duration threshold is increased, recover from warning state
                     if appState == .warning {
                         appState = .active
+                        Logger.focus.notice("State recovered to ACTIVE (Limit Increased)")
                     }
                 }
             }
         } else {
             if appState == .active || appState == .warning {
                 appState = .paused
+                Logger.focus.notice("State changed to PAUSED (User Inactive but < RestDuration)")
             }
         }
         
@@ -288,6 +299,7 @@ class FocusViewModel: ObservableObject {
     // MARK: - Public Save Method
     
     private func triggerPeriodicSave() {
+        Logger.persistence.debug("Triggering periodic save")
         syncCurrentHourFromMinuteActivity()
         persistActivity()
         saveDailyActivities()
@@ -305,6 +317,7 @@ class FocusViewModel: ObservableObject {
         // Wait for persistence queue to finish
         persistenceQueue.sync {}
         
+        Logger.persistence.notice("All data saved successfully (Synchronous)")
         print("All data saved successfully")
     }
     
@@ -451,6 +464,7 @@ class FocusViewModel: ObservableObject {
     }
     
     @objc private func handleScreenSleep() {
+        Logger.lifecycle.notice("Screen Sleep Detected")
         print("Screen Sleep Detected")
         isScreenOff = true
         screenOffTimestamp = Date()
@@ -459,6 +473,7 @@ class FocusViewModel: ObservableObject {
     }
     
     @objc private func handleScreenWake() {
+        Logger.lifecycle.notice("Screen Wake Detected")
         print("Screen Wake Detected")
         checkSleepDuration()
         isScreenOff = false
@@ -466,6 +481,7 @@ class FocusViewModel: ObservableObject {
     }
     
     @objc private func handleSystemSleep() {
+        Logger.lifecycle.notice("System Sleep Detected")
         print("System Sleep Detected")
         // Save data before system sleeps
         saveAllData()
@@ -474,6 +490,7 @@ class FocusViewModel: ObservableObject {
     }
     
     @objc private func handleSystemWake() {
+        Logger.lifecycle.notice("System Wake Detected")
         print("System Wake Detected")
         checkSleepDuration()
         isScreenOff = false
@@ -481,6 +498,7 @@ class FocusViewModel: ObservableObject {
     }
     
     @objc private func handleSystemPowerOff() {
+        Logger.lifecycle.notice("System Power Off Detected")
         print("System Power Off Detected - Saving all data")
         // Save data before system shuts down
         saveAllData()

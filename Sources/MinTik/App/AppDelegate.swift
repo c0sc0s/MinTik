@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import UserNotifications
+import os
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
@@ -16,6 +17,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let hostingController = NSHostingController(rootView: ModernFocusUI(vm: FocusViewModel.shared))
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        Logger.lifecycle.notice("Application did finish launching")
         NSApp.setActivationPolicy(.accessory)
         
         // Initialize popover content
@@ -90,6 +92,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func applicationWillTerminate(_ notification: Notification) {
+        Logger.lifecycle.notice("Application will terminate")
         // Save all data before app exits
         FocusViewModel.shared.saveAllData()
     }
@@ -162,6 +165,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func quitApp() {
+        Logger.lifecycle.notice("User requested quit")
         NSApp.terminate(nil)
     }
     
