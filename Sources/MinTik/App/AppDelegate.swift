@@ -120,14 +120,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func setupStatusItem() {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        let item = NSStatusBar.system.statusItem(withLength: 22)
         if let button = item.button {
             if let imageURL = resourceURL(name: "MenuBarIcon", ext: "svg"),
                let image = NSImage(contentsOf: imageURL) {
-                image.isTemplate = true
                 image.size = NSSize(width: 18, height: 18)
+                image.isTemplate = true
                 button.image = image
                 button.imagePosition = .imageOnly
+                button.imageScaling = .scaleProportionallyDown
             } else {
                 button.title = "休息"
             }
