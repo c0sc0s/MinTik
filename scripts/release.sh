@@ -54,11 +54,10 @@ APP_VERSION="${VERSION#v}"
 echo "📦 将发布版本: $VERSION"
 echo ""
 
-# 4. 构建 DMG（若不存在则自动构建）
-if [ ! -f "$DMG_FILE" ]; then
-    echo "🛠️  未找到 DMG，开始构建..."
-    bash scripts/build-and-package.sh MinTik "$APP_VERSION" dist
-fi
+# 4. 重新构建 DMG
+echo "🛠️  开始构建 DMG..."
+rm -f "$DMG_FILE"
+bash scripts/build-and-package.sh MinTik "$APP_VERSION" dist
 
 DMG_SIZE=$(du -h "$DMG_FILE" | cut -f1)
 echo "✅ 找到 DMG 文件: $DMG_FILE ($DMG_SIZE)"
