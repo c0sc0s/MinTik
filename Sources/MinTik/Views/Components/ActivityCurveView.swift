@@ -186,7 +186,7 @@ struct ActivityCurveView: View {
             .frame(height: 140)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(inactiveBlock.opacity(0.3))
+                    .fill(inactiveBlock.opacity(0.85))
             )
             .overlay(
                 HStack(spacing: 6) {

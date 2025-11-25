@@ -178,7 +178,7 @@ struct FocusDashboardView: View {
                         .foregroundColor(textSecondary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(inactiveBlock.opacity(0.6))
+                        .background(inactiveBlock.opacity(0.8))
                         .cornerRadius(4)
                         .lineLimit(1)
                         .transition(.opacity)
@@ -207,7 +207,7 @@ struct FocusDashboardView: View {
                     
                     let fillColor: Color = {
                         if isFuture {
-                            return inactiveBlock.opacity(0.3)
+                            return inactiveBlock.opacity(0.6)
                         } else if isFatigueMinute {
                             let t = min(1.0, max(0.0, fatigueLevel))
                             return alertColor.opacity(0.3 + 0.7 * t)

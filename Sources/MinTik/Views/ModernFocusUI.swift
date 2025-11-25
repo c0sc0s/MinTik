@@ -23,7 +23,7 @@ struct ModernFocusUI: View {
     
     var textPrimary: Color { isDarkMode ? .white : Color(hex: "171717") }
     var textSecondary: Color { isDarkMode ? Color(hex: "737373") : Color(hex: "a3a3a3") }
-    var inactiveBlock: Color { isDarkMode ? Color(hex: "262626") : Color(hex: "f5f5f5") }
+    var inactiveBlock: Color { isDarkMode ? Color(hex: "#2a2a2a") : Color(hex: "f5f5f5") }
     var accent: Color { Color(hex: vm.config.primaryColorHex) }
     var warningColor: Color { alertColor(from: accent) }
     var pausedColor: Color { isDarkMode ? Color(hex: "facc15") : Color(hex: "eab308") }
@@ -112,7 +112,7 @@ struct ModernFocusUI: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .background(Color.black.opacity(0.35))
+                    .background(Color.black.opacity(0.2))
                     .cornerRadius(10)
                 } else {
                     // Back button when in settings
@@ -136,7 +136,7 @@ struct ModernFocusUI: View {
                     title: banner.title,
                     detail: banner.detail,
                     actionTitle: banner.actionTitle,
-                    backgroundColor: inactiveBlock.opacity(0.7),
+                    backgroundColor: inactiveBlock.opacity(0.8),
                     accent: warningColor,
                     textPrimary: textPrimary,
                     textSecondary: textSecondary,
@@ -171,6 +171,7 @@ struct ModernFocusUI: View {
         .offset(y: isAppearing ? 0 : -10)
         .opacity(isAppearing ? 1.0 : 0.0)
         .background(Color.clear)
+        .preferredColorScheme(.dark)  // Force dark mode
         .onAppear {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                 isAppearing = true

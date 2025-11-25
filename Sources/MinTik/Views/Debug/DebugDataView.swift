@@ -102,7 +102,7 @@ struct DebugDataView: View {
                             .background(
                                 RoundedRectangle(cornerRadius: 4)
                                     .fill(selectedHour == hour ? Color.blue.opacity(0.3) : 
-                                          (hourlyData[hour] > 0 ? Color.green.opacity(0.1) : inactiveBlock.opacity(0.3)))
+                                          (hourlyData[hour] > 0 ? Color.green.opacity(0.1) : inactiveBlock.opacity(1)))
                             )
                             .overlay(
                                 RoundedRectangle(cornerRadius: 4)
@@ -183,7 +183,7 @@ struct DebugDataView: View {
                                 .padding(.vertical, 2)
                                 .background(
                                     RoundedRectangle(cornerRadius: 2)
-                                        .fill(seconds > 0 ? Color.blue.opacity(0.2) : inactiveBlock.opacity(0.2))
+                                        .fill(seconds > 0 ? Color.blue.opacity(0.2) : inactiveBlock.opacity(0.65))
                                 )
                             }
                         }

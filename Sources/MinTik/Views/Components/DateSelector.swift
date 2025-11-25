@@ -82,7 +82,7 @@ struct DateSelector: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 2)
-        .background(inactiveBlock.opacity(0.7))
+        .background(inactiveBlock.opacity(0.85))
         .cornerRadius(8)
     }
 

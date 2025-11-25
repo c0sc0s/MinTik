@@ -140,7 +140,7 @@ struct RhythmHealthView: View {
             .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(inactiveBlock.opacity(0.3))
+                    .fill(inactiveBlock.opacity(0.65))
             )
             
             // Recent Cycle Timeline
@@ -160,7 +160,7 @@ struct RhythmHealthView: View {
                     ZStack(alignment: .leading) {
                         // Background
                         RoundedRectangle(cornerRadius: 6)
-                            .fill(inactiveBlock.opacity(0.3))
+                            .fill(inactiveBlock.opacity(0.65))
                         
                         // Sessions
                         let sessions = (data?.sessions ?? []) + (currentSession != nil ? [currentSession!] : [])
@@ -230,7 +230,7 @@ struct RhythmHealthView: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(inactiveBlock.opacity(0.5))
+                .fill(inactiveBlock.opacity(0.8))
         )
     }
 }

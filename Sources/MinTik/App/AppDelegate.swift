@@ -23,7 +23,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Initialize popover content
         popover.contentViewController = hostingController
-        // popover.appearance = NSAppearance(named: .vibrantDark)  // Removed to reduce gray effect
+        // Force dark mode appearance
+        popover.appearance = NSAppearance(named: .darkAqua)
         
         // Ensure hosting controller view is transparent for window usage
         hostingController.view.wantsLayer = true
@@ -60,6 +61,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     window.isMovableByWindowBackground = true
                     window.titlebarAppearsTransparent = true
                     window.titleVisibility = .hidden
+                    
+                    // Force dark mode appearance
+                    window.appearance = NSAppearance(named: .darkAqua)
                     
                     window.invalidateShadow()
                     
@@ -153,6 +157,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             popover.animates = false  // Disable system animation to avoid flicker
             NSApp.activate(ignoringOtherApps: true)
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
+            
+            // Configure window to reduce transparency natively
+            if let popoverWindow = popover.contentViewController?.view.window {
+                // Reduce window transparency (1.0 = fully opaque, 0.0 = fully transparent)
+                popoverWindow.alphaValue = 0.98
+                popoverWindow.isOpaque = false
+                
+                // Set darker background color to match the UI
+                // This affects both the arrow and the content area
+                popoverWindow.backgroundColor = NSColor(hex: "#1a1a1a")
+            }
             
             // Immediately make window key (no flicker since animation is disabled)
             popover.contentViewController?.view.window?.makeKey()

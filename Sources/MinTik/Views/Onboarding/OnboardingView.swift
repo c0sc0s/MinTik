@@ -84,6 +84,7 @@ struct OnboardingView: View {
         }
         .frame(width: 550, height: 380)
         .background(Color.clear)
+        .preferredColorScheme(.dark)  // Force dark mode
         .edgesIgnoringSafeArea(.all)
     }
     
