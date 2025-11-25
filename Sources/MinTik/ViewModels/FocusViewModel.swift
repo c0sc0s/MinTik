@@ -2,6 +2,7 @@ import SwiftUI
 import CoreGraphics
 import UserNotifications
 import Combine
+import AVFoundation
 import os
 
 class FocusViewModel: ObservableObject {
@@ -248,9 +249,9 @@ class FocusViewModel: ObservableObject {
     }
     
     var formattedTime: String {
-        let mins = workTime / 60
-        let secs = workTime % 60
-        return String(format: "%02d:%02d", mins, secs)
+        let minutes = max(workTime / 60, 0)
+        let seconds = max(workTime % 60, 0)
+        return String(format: "%02d:%02d", minutes, seconds)
     }
     
     func refreshNotificationPermission() {
@@ -438,11 +439,15 @@ class FocusViewModel: ObservableObject {
         guard NotificationAvailability.isAvailable else { return }
         guard !hasDispatchedWarningNotification else { return }
         hasDispatchedWarningNotification = true
+        
+        // Play notification sound using AVAudioPlayer
+        playNotificationSound()
+        
         let minutes = max(workTime / 60, Int(config.duration))
         let content = UNMutableNotificationContent()
         content.title = "该休息一下啦"
         content.body = "已连续专注 \(minutes) 分钟，起身活动一下吧。"
-        content.sound = .default
+        // Remove notification sound - we play it ourselves
         
         let request = UNNotificationRequest(
             identifier: "MinTik.warning.\(UUID().uuidString)",
@@ -450,6 +455,45 @@ class FocusViewModel: ObservableObject {
             trigger: nil
         )
         UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+    }
+    
+    func sendTestNotification() {
+        guard NotificationAvailability.isAvailable else { return }
+        
+        // Play notification sound using AVAudioPlayer
+        playNotificationSound()
+        
+        let content = UNMutableNotificationContent()
+        content.title = "测试通知"
+        content.body = "这是一条测试通知，用于预览通知声音和样式。"
+        // Remove notification sound - we play it ourselves
+        
+        let request = UNNotificationRequest(
+            identifier: "MinTik.test.\(UUID().uuidString)",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+    }
+    
+    private func playNotificationSound() {
+        // Use system sound path for Glass (a nice 2-second notification sound)
+        let soundPath = "/System/Library/Sounds/Glass.aiff"
+        guard let url = URL(string: "file://\(soundPath)") else { return }
+        
+        do {
+            let player = try AVAudioPlayer(contentsOf: url)
+            player.prepareToPlay()
+            player.play()
+            
+            // Keep a reference to prevent deallocation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                // Player will be deallocated after sound finishes
+                _ = player
+            }
+        } catch {
+            print("Failed to play notification sound: \(error)")
+        }
     }
     
     // MARK: - Sleep / Screen Observers

@@ -101,6 +101,26 @@ struct FocusSettingsView: View {
                     }
                     .buttonStyle(.plain)
                 }
+                
+                // Test Notification Button (always show when notifications are available)
+                if vm.notificationState == .authorized || vm.notificationState == .provisional {
+                    Button(action: {
+                        vm.sendTestNotification()
+                    }) {
+                        HStack {
+                            Image(systemName: "speaker.wave.2")
+                                .font(.system(size: 11, weight: .medium))
+                            Text("测试通知声音")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(textPrimary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.white.opacity(0.1))
+                        .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
 
             // Launch at Login Section

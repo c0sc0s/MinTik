@@ -3,6 +3,7 @@ import SwiftUI
 struct ModernFocusUI: View {
     @ObservedObject var vm: FocusViewModel
     @State private var isQuitHovered = false
+    @State private var isAppearing = false  // For custom entrance animation
     
     private let isDarkMode = true
     private var baseHeight: CGFloat { 360 }
@@ -111,7 +112,7 @@ struct ModernFocusUI: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .background(inactiveBlock.opacity(0.5))
+                    .background(Color.black.opacity(0.35))
                     .cornerRadius(10)
                 } else {
                     // Back button when in settings
@@ -166,9 +167,23 @@ struct ModernFocusUI: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(width: 320, height: currentHeight)
-        .background(cardBackground)
-        .cornerRadius(24)
-        .shadow(color: isDarkMode ? .black.opacity(0.5) : Color.gray.opacity(0.2), radius: 15, x: 0, y: 8)
-        .preferredColorScheme(.dark)
+        .scaleEffect(isAppearing ? 1.0 : 0.9)
+        .offset(y: isAppearing ? 0 : -10)
+        .opacity(isAppearing ? 1.0 : 0.0)
+        .background(Color.clear)
+        .onAppear {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                isAppearing = true
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("PopoverDidShow"))) { _ in
+            // Reset and re-trigger animation when popover is shown
+            isAppearing = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                    isAppearing = true
+                }
+            }
+        }
     }
 }

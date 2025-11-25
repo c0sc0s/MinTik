@@ -6,7 +6,6 @@ set -euo pipefail
 VERSION_ARG=${1:-""}
 BUMP=${BUMP:-patch}
 DMG_FILE="dist/MinTik.dmg"
-RELEASE_NOTES="docs/RELEASE_NOTES.md"
 NOTARY_VALIDATE=${NOTARY_VALIDATE:-true}
 DEPLOY_WEB=${DEPLOY_WEB:-true}
 
@@ -78,13 +77,59 @@ if [ "$NOTARY_VALIDATE" = true ]; then
     fi
 fi
 
-# 5. 检查 Release Notes
-if [ ! -f "$RELEASE_NOTES" ]; then
-    echo "❌ 错误: 找不到 Release Notes: $RELEASE_NOTES"
+# 5. 检查 Release Notes（优先使用版本特定文档）
+VERSION_RELEASE_NOTES="docs/release/${VERSION}.md"
+DEFAULT_RELEASE_NOTES="docs/RELEASE_NOTES.md"
+
+if [ -f "$VERSION_RELEASE_NOTES" ]; then
+    RELEASE_NOTES="$VERSION_RELEASE_NOTES"
+    echo "✅ 找到版本特定的 Release Notes: $RELEASE_NOTES"
+elif [ -f "$DEFAULT_RELEASE_NOTES" ]; then
+    RELEASE_NOTES="$DEFAULT_RELEASE_NOTES"
+    echo "✅ 使用默认 Release Notes: $RELEASE_NOTES"
+else
+    echo "❌ 错误: 找不到 Release Notes"
+    echo "   请创建以下文件之一："
+    echo "   - $VERSION_RELEASE_NOTES (推荐)"
+    echo "   - $DEFAULT_RELEASE_NOTES"
     exit 1
 fi
 
-echo "✅ 找到 Release Notes"
+echo ""
+echo "📄 Release Notes 预览:"
+echo "---"
+head -n 20 "$RELEASE_NOTES"
+echo "..."
+echo "---"
+echo ""
+
+# 自动检查文档中的版本号
+echo "🔍 验证文档版本号..."
+if grep -q "$VERSION" "$RELEASE_NOTES" || grep -q "$APP_VERSION" "$RELEASE_NOTES"; then
+    echo "✅ 文档中包含版本号 $VERSION"
+else
+    echo "⚠️  警告: 文档中未找到版本号 $VERSION 或 $APP_VERSION"
+    echo "   请检查文档内容是否正确"
+fi
+echo ""
+
+# 交互式确认
+echo "⚠️  请确认以下信息："
+echo "   版本号: $VERSION"
+echo "   文档: $RELEASE_NOTES"
+echo ""
+read -p "❓ 版本号与文档内容是否匹配？(y/N) " -n 1 -r
+echo ""
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "❌ 发布已取消"
+    echo ""
+    echo "💡 提示："
+    echo "   1. 检查 $RELEASE_NOTES 中的版本号是否为 $VERSION"
+    echo "   2. 确认文档内容准确描述了此版本的更新"
+    echo "   3. 如需修改版本号，请重新运行: sh scripts/release.sh <VERSION>"
+    exit 1
+fi
+echo "✅ 确认通过，继续发布..."
 echo ""
 
 # 6. 创建 Git Tag

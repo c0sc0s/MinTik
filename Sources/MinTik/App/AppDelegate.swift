@@ -15,6 +15,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }()
     private let popover = NSPopover()
     private let hostingController = NSHostingController(rootView: ModernFocusUI(vm: FocusViewModel.shared))
+    private var popoverShowCount = 0  // Counter to trigger animation on each show
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         Logger.lifecycle.notice("Application did finish launching")
@@ -22,6 +23,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Initialize popover content
         popover.contentViewController = hostingController
+        // popover.appearance = NSAppearance(named: .vibrantDark)  // Removed to reduce gray effect
         
         // Ensure hosting controller view is transparent for window usage
         hostingController.view.wantsLayer = true
@@ -147,11 +149,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if popover.isShown {
             popover.performClose(nil)
         } else {
-            popover.contentViewController = hostingController
             popover.behavior = .transient
-            popover.animates = true
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
+            popover.animates = false  // Disable system animation to avoid flicker
             NSApp.activate(ignoringOtherApps: true)
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
+            
+            // Immediately make window key (no flicker since animation is disabled)
+            popover.contentViewController?.view.window?.makeKey()
+            
+            // Trigger animation reset via notification
+            NotificationCenter.default.post(name: Notification.Name("PopoverDidShow"), object: nil)
         }
     }
 

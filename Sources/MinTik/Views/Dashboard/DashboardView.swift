@@ -77,15 +77,17 @@ struct FocusDashboardView: View {
             VStack(alignment: .leading, spacing: 4) { // Reduced spacing 8->4
                 HStack(alignment: .top, spacing: 8) {
                     Text(vm.formattedTime)
-                        .font(.system(size: 58, weight: .bold, design: .monospaced)) 
+                        .font(.system(size: vm.workTime / 60 >= 100 ? 42 : 58, weight: .bold, design: .monospaced)) 
                         .monospacedDigit()
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
                         .foregroundColor(
                             vm.appState == .warning ? warningColor.opacity(0.9) : 
                             (vm.appState == .idle ? Color.green.opacity(0.7) : 
                             (vm.appState == .paused ? pausedColor.opacity(0.75) : textPrimary.opacity(0.9)))
                         )
-                        .tracking(2)
-                        .kerning(1.2)
+                        .tracking(vm.workTime / 60 >= 100 ? 0.5 : 2)
+                        .kerning(vm.workTime / 60 >= 100 ? 0.5 : 1.2)
                         .animation(.easeOut(duration: 0.5), value: vm.appState == .active)
                         .shadow(color: (vm.appState == .warning ? warningColor : 
                                        (vm.appState == .idle ? Color.green : 
