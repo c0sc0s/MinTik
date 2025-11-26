@@ -103,6 +103,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         FocusViewModel.shared.saveAllData()
     }
     
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        Logger.lifecycle.notice("Application reopen requested, hasVisibleWindows: \(flag)")
+        
+        // If onboarding is not completed, show the onboarding window
+        if FocusViewModel.shared.config.isFirstLaunch {
+            if let window = NSApplication.shared.windows.first {
+                window.makeKeyAndOrderFront(nil)
+            }
+            return true
+        }
+        
+        // Otherwise, show the popover from the status bar
+        if statusItem?.button != nil {
+            if !popover.isShown {
+                togglePopover()
+            }
+        }
+        
+        // Return false to prevent creating a new window
+        return false
+    }
+    
     private func setupAppIcon() {
         guard let imageURL = resourceURL(name: "MenuBarIcon", ext: "svg"),
               let image = NSImage(contentsOf: imageURL) else { return }
