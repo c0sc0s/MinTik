@@ -177,7 +177,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             popover.behavior = .transient
             popover.animates = false  // Disable system animation to avoid flicker
-            NSApp.activate(ignoringOtherApps: true)
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
             
             // Configure window to reduce transparency natively
