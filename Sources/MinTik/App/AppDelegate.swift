@@ -19,7 +19,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         Logger.lifecycle.notice("Application did finish launching")
-        NSApp.setActivationPolicy(.prohibited)
+        NSApp.setActivationPolicy(.accessory)
         
         // Initialize popover content
         popover.contentViewController = hostingController
@@ -103,6 +103,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         FocusViewModel.shared.saveAllData()
     }
     
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        return false
+    }
+    
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         Logger.lifecycle.notice("Application reopen requested, hasVisibleWindows: \(flag)")
         
@@ -148,11 +152,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func setupStatusItem() {
-        let item = NSStatusBar.system.statusItem(withLength: 22)
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
             if let imageURL = resourceURL(name: "MenuBarIcon", ext: "svg"),
                let image = NSImage(contentsOf: imageURL) {
-                image.size = NSSize(width: 18, height: 18)
+                // Don't set a fixed size - let the system determine the appropriate size
+                // based on the user's menu bar size preference
                 image.isTemplate = true
                 button.image = image
                 button.imagePosition = .imageOnly
@@ -231,13 +236,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             
             if let color = color {
                 let tintedImage = baseImage.tinted(with: color)
-                tintedImage.size = NSSize(width: 18, height: 18)
+                // Don't set a fixed size - let the system determine the appropriate size
                 tintedImage.isTemplate = false
                 button.image = tintedImage
                 button.contentTintColor = nil
             } else {
+                // Don't set a fixed size - let the system determine the appropriate size
                 baseImage.isTemplate = true
-                baseImage.size = NSSize(width: 18, height: 18)
                 button.image = baseImage
                 button.contentTintColor = nil
             }

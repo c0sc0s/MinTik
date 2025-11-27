@@ -444,6 +444,12 @@ class FocusViewModel: ObservableObject {
         playNotificationSound()
         
         let minutes = max(workTime / 60, Int(config.duration))
+        
+        // Show Full Screen Notification if enabled
+        if config.enableFullScreenNotification {
+            FullScreenNotificationManager.shared.show(duration: minutes)
+        }
+        
         let content = UNMutableNotificationContent()
         content.title = "该休息一下啦"
         content.body = "已连续专注 \(minutes) 分钟，起身活动一下吧。"
@@ -474,6 +480,10 @@ class FocusViewModel: ObservableObject {
             trigger: nil
         )
         UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+    }
+    
+    func sendTestFullScreenNotification() {
+        FullScreenNotificationManager.shared.showTest()
     }
     
     private func playNotificationSound() {

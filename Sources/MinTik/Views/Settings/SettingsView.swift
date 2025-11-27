@@ -104,22 +104,64 @@ struct FocusSettingsView: View {
                 
                 // Test Notification Button (always show when notifications are available)
                 if vm.notificationState == .authorized || vm.notificationState == .provisional {
-                    Button(action: {
-                        vm.sendTestNotification()
-                    }) {
-                        HStack {
-                            Image(systemName: "speaker.wave.2")
-                                .font(.system(size: 11, weight: .medium))
-                            Text("测试通知声音")
-                                .font(.system(size: 11, weight: .medium))
+                    VStack(alignment: .leading, spacing: 10) {
+                        // Standard Notification Test
+                        Button(action: {
+                            vm.sendTestNotification()
+                        }) {
+                            HStack {
+                                Image(systemName: "speaker.wave.2")
+                                    .font(.system(size: 11, weight: .medium))
+                                Text("测试通知声音")
+                                    .font(.system(size: 11, weight: .medium))
+                            }
+                            .foregroundColor(textPrimary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.white.opacity(0.1))
+                            .cornerRadius(6)
                         }
-                        .foregroundColor(textPrimary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.1))
-                        .cornerRadius(6)
+                        .buttonStyle(.plain)
+                        
+                        Divider()
+                            .background(textSecondary.opacity(0.2))
+                            .padding(.vertical, 5)
+                        
+                        // Full Screen Notification Settings
+                        HStack {
+                            Text("强提醒 (全屏弹窗)")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(textSecondary)
+                            Spacer()
+                            Toggle("", isOn: $vm.config.enableFullScreenNotification)
+                                .toggleStyle(SwitchToggleStyle(tint: accent))
+                                .labelsHidden()
+                        }
+                        
+                        Text("开启后，休息提醒将以全屏弹窗形式出现，强制打断工作")
+                            .font(.system(size: 10))
+                            .foregroundColor(textSecondary.opacity(0.7))
+                            .fixedSize(horizontal: false, vertical: true)
+                        
+                        if vm.config.enableFullScreenNotification {
+                            Button(action: {
+                                vm.sendTestFullScreenNotification()
+                            }) {
+                                HStack {
+                                    Image(systemName: "macwindow.on.rectangle")
+                                        .font(.system(size: 11, weight: .medium))
+                                    Text("测试强提醒")
+                                        .font(.system(size: 11, weight: .medium))
+                                }
+                                .foregroundColor(textPrimary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.white.opacity(0.1))
+                                .cornerRadius(6)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .buttonStyle(.plain)
                 }
             }
 
