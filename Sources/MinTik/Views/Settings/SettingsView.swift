@@ -219,16 +219,16 @@ struct FocusSettingsView: View {
                 HStack(spacing: 20) {
                     ThemeOptionView(
                         name: "活力橙",
-                        primary: Color(hex: "FF9F0A"),
-                        isSelected: vm.config.primaryColorHex == "FF9F0A",
-                        onSelect: { vm.config.primaryColorHex = "FF9F0A" }
+                        primary: Color(hex: "FF8A3D"),
+                        isSelected: vm.config.primaryColorHex == "FF8A3D",
+                        onSelect: { vm.config.primaryColorHex = "FF8A3D" }
                     )
                     
                     ThemeOptionView(
                         name: "深海蓝",
-                        primary: Color(hex: "0A84FF"),
-                        isSelected: vm.config.primaryColorHex == "0A84FF",
-                        onSelect: { vm.config.primaryColorHex = "0A84FF" }
+                        primary: Color(hex: "0A7AEE"),
+                        isSelected: vm.config.primaryColorHex == "0A7AEE",
+                        onSelect: { vm.config.primaryColorHex = "0A7AEE" }
                     )
                     
                     ThemeOptionView(

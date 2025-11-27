@@ -152,12 +152,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func setupStatusItem() {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        let item = NSStatusBar.system.statusItem(withLength: 28)
         if let button = item.button {
             if let imageURL = resourceURL(name: "MenuBarIcon", ext: "svg"),
                let image = NSImage(contentsOf: imageURL) {
-                // Don't set a fixed size - let the system determine the appropriate size
-                // based on the user's menu bar size preference
+                // Use menu bar thickness to determine appropriate icon size
+                // This adapts to the user's menu bar size preference
+                let thickness = NSStatusBar.system.thickness
+                let iconSize = NSSize(width: thickness * 0.75, height: thickness * 0.75)
+                image.size = iconSize
                 image.isTemplate = true
                 button.image = image
                 button.imagePosition = .imageOnly
@@ -234,14 +237,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let imageURL = resourceURL(name: "MenuBarIcon", ext: "svg"),
            let baseImage = NSImage(contentsOf: imageURL) {
             
+            // Use menu bar thickness to determine appropriate icon size
+            let thickness = NSStatusBar.system.thickness
+            let iconSize = NSSize(width: thickness * 0.75, height: thickness * 0.75)
+            
             if let color = color {
                 let tintedImage = baseImage.tinted(with: color)
-                // Don't set a fixed size - let the system determine the appropriate size
+                tintedImage.size = iconSize
                 tintedImage.isTemplate = false
                 button.image = tintedImage
                 button.contentTintColor = nil
             } else {
-                // Don't set a fixed size - let the system determine the appropriate size
+                baseImage.size = iconSize
                 baseImage.isTemplate = true
                 button.image = baseImage
                 button.contentTintColor = nil

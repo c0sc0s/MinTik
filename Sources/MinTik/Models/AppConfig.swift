@@ -31,4 +31,44 @@ struct AppConfig: Codable {
         launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
         enableFullScreenNotification = try container.decodeIfPresent(Bool.self, forKey: .enableFullScreenNotification) ?? false
     }
+    
+    // Computed properties for theme-specific fatigue colors
+    var fatigueColorStart: String {
+        switch primaryColorHex.uppercased() {
+        case "FF8A3D", "FF9F0A": // Orange theme
+            return "FF6B35"
+        case "0A7AEE", "0A84FF": // Blue theme
+            return "5B9FD8"
+        case "30D158": // Green theme
+            return "FFD60A"
+        default:
+            return "FF6B35" // Default to orange theme
+        }
+    }
+    
+    var fatigueColorMid: String {
+        switch primaryColorHex.uppercased() {
+        case "FF8A3D", "FF9F0A": // Orange theme
+            return "E63946"
+        case "0A7AEE", "0A84FF": // Blue theme
+            return "8B7FB8"
+        case "30D158": // Green theme
+            return "FF9F0A"
+        default:
+            return "E63946" // Default to orange theme
+        }
+    }
+    
+    var fatigueColorEnd: String {
+        switch primaryColorHex.uppercased() {
+        case "FF8A3D", "FF9F0A": // Orange theme
+            return "C1121F"
+        case "0A7AEE", "0A84FF": // Blue theme
+            return "B565A7"
+        case "30D158": // Green theme
+            return "FF6B35"
+        default:
+            return "C1121F" // Default to orange theme
+        }
+    }
 }
