@@ -14,10 +14,11 @@ struct ActivityCurveView: View {
     @State private var xStartState: Int = 0
     @State private var xEndState: Int = 0
     @State private var isComputing: Bool = false
+    @State private var chartId: UUID = UUID()  // Add chart ID for forcing re-render
     
     // Data model for the chart - now using minutes
     struct MinuteDataPoint: Identifiable {
-        let id = UUID()
+        var id: Int { minute }  // Use minute as ID instead of UUID for stability
         let minute: Int  // Absolute minute from 0 (00:00) to 1439 (23:59)
         let seconds: Int
     }
@@ -32,8 +33,13 @@ struct ActivityCurveView: View {
         isComputing = true
         let date = vm.selectedDate
         let isTodayFlag = Calendar.current.isDateInToday(date)
-        let history = selectedDayData?.minuteHistory
+        let viewModel = vm  // Capture vm reference
+        
         DispatchQueue.global(qos: .userInitiated).async {
+            // Get data for the selected date inside the async closure
+            let dayData = viewModel.getDailyData(for: date)
+            let history = dayData?.minuteHistory
+            
             var first = 0
             var last = 1439
             if let history = history {
@@ -66,8 +72,9 @@ struct ActivityCurveView: View {
                 let endHour = (last / 60) + 1
                 xEnd = min(endHour * 60, 1439)
             }
+            
             let startH = xStart / 60
-            let endH = xEnd / 60
+            let endH = (xEnd + 59) / 60  // Round up to include the hour containing xEnd
             var labels: [Int] = []
             let range = endH - startH
             let gap: Int
@@ -77,10 +84,14 @@ struct ActivityCurveView: View {
             if labels.last != endH * 60 { labels.append(endH * 60) }
             var points: [MinuteDataPoint] = []
             if let history = history {
+                // Get the current hour from the actual current time for real-time data
+                let currentHour = Calendar.current.component(.hour, from: Date())
+                
                 for hour in startH...endH {
                     let minuteData: [Int]
-                    if isTodayFlag && hour == Calendar.current.component(.hour, from: Date()) {
-                        minuteData = vm.minuteActivity
+                    // Use real-time minuteActivity only for today AND the current hour
+                    if isTodayFlag && hour == currentHour {
+                        minuteData = viewModel.minuteActivity
                     } else {
                         minuteData = history[hour] ?? Array(repeating: 0, count: 60)
                     }
@@ -92,11 +103,13 @@ struct ActivityCurveView: View {
                     }
                 }
             }
+            
             DispatchQueue.main.async {
                 self.xStartState = xStart
                 self.xEndState = xEnd
                 self.xLabelsState = labels
                 self.chartDataState = points
+                self.chartId = UUID()  // Generate new ID to force chart re-render
                 self.isComputing = false
             }
         }
@@ -177,6 +190,7 @@ struct ActivityCurveView: View {
                         }
                     }
                 }
+                .id(chartId)  // Force chart to re-render when chartId changes
                 .padding(.top, 20)
                 .padding(.horizontal, 10)
                 .padding(.bottom, 5)

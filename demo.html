@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS 3D 交互式实验室</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --border: #334155;
+            
+            --axis-x: #ef4444;
+            --axis-y: #22c55e;
+            --axis-z: #3b82f6;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 320px 1fr 300px; /* 左控制，中视图，右代码 */
+            overflow: hidden;
+        }
+
+        /* --- 左侧控制面板 --- */
+        .sidebar {
+            background-color: var(--panel-bg);
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-header {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--accent);
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .info-tooltip {
+            font-size: 12px;
+            background: #333;
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center; 
+            justify-content: center;
+            cursor: help;
+            color: #aaa;
+        }
+
+        label {
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .value-display {
+            font-family: monospace;
+            color: var(--text-main);
+            font-weight: bold;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            transition: 0.2s;
+        }
+        .checkbox-wrapper:hover { background: rgba(255,255,255,0.1); }
+        .checkbox-wrapper input { width: auto; margin: 0; }
+        .checkbox-wrapper span { font-size: 13px; }
+
+        /* --- 中间 3D 视图 --- */
+        .viewport {
+            position: relative;
+            perspective: 1000px; /* JS 会动态改这里 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at center, rgba(56, 189, 248, 0.05) 0%, transparent 70%);
+            user-select: none;
+        }
+
+        /* 3D 场景根容器 */
+        .world {
+            position: relative;
+            width: 0; height: 0;
+            transform-style: preserve-3d;
+            /* 初始角度 */
+            transform: rotateX(20deg) rotateY(30deg); 
+        }
+
+        /* 辅助网格 */
+        .grid-floor {
+            position: absolute;
+            width: 800px;
+            height: 800px;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: translate(-50%, -50%) rotateX(90deg);
+            border: 1px solid rgba(255,255,255,0.1);
+            pointer-events: none;
+        }
+
+        /* 坐标轴 */
+        .axis-group {
+            position: absolute;
+            pointer-events: none;
+            transform-style: preserve-3d;
+        }
+        .axis { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+        .axis::after { position: absolute; font-family: monospace; font-weight: bold; font-size: 14px; }
+        
+        /* X: Red */
+        .axis-x { width: 400px; height: 2px; background: var(--axis-x); }
+        .axis-x::after { content: "X"; color: var(--axis-x); right: -20px; top: -8px; }
+        
+        /* Y: Green */
+        .axis-y { height: 400px; width: 2px; background: var(--axis-y); }
+        .axis-y::after { content: "Y"; color: var(--axis-y); bottom: -20px; left: -5px; }
+        
+        /* Z: Blue */
+        .axis-z { height: 400px; width: 2px; background: var(--axis-z); transform: rotateX(90deg); }
+        .axis-z::after { content: "Z"; color: var(--axis-z); bottom: -20px; left: -5px; transform: rotateX(-90deg); }
+
+
+        /* --- 实验物体：嵌套盒子 --- */
+        /* 父容器 */
+        .box-container {
+            width: 200px;
+            height: 200px;
+            position: absolute;
+            left: -100px; top: -100px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            
+            /* 核心教学属性 */
+            transform-style: preserve-3d; 
+            transform: rotateY(0deg);
+            transition: transform 0.1s;
+        }
+        
+        .box-label {
+            position: absolute;
+            top: -25px; left: 0;
+            width: 100%; text-align: center;
+            font-size: 12px; color: #aaa;
+            pointer-events: none;
+        }
+
+        /* 子元素：可翻转卡牌 */
+        /* 卡牌容器：负责整体旋转 */
+        .card-wrapper {
+            width: 100px;
+            height: 150px;
+            position: relative;
+            /* 关键：让子元素（正反面）保持在 3D 空间 */
+            transform-style: preserve-3d;
+            transition: transform 0.1s;
+        }
+
+        /* 卡牌面：正反面的公共样式 */
+        .card-face {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 20px;
+            color: #fff;
+            border: 2px solid #fff;
+            /* 关键：隐藏背面，这样旋转 180 度时才能看到另一面 */
+            backface-visibility: hidden;
+        }
+
+        /* 正面样式 */
+        .card-front {
+            background: linear-gradient(135deg, #38bdf8, #2563eb);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+        }
+
+        /* 背面样式 */
+        .card-back {
+            background: linear-gradient(135deg, #f43f5e, #e11d48);
+            box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);
+            /* 关键：预先旋转 180 度，让它背对屏幕 */
+            transform: rotateY(180deg);
+        }
+
+
+        /* --- 右侧代码面板 --- */
+        .code-panel {
+            background: #0d1117;
+            border-left: 1px solid var(--border);
+            padding: 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #e6edf3;
+            overflow-y: auto;
+        }
+
+        .code-block {
+            margin-bottom: 20px;
+        }
+        
+        .selector { color: #d2a8ff; }
+        .property { color: #79c0ff; }
+        .value { color: #a5d6ff; }
+        .comment { color: #8b949e; font-style: italic; display: block; margin-top: 5px; }
+        .bracket { color: #e6edf3; }
+
+        /* 高亮变化的行 */
+        .highlight-line {
+            background: rgba(56, 189, 248, 0.15);
+            display: block;
+            margin: 0 -20px;
+            padding: 0 20px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- 1. 左侧：控制台 -->
+    <div class="sidebar">
+        <div style="text-align: center; margin-bottom: 10px;">
+            <h2 style="margin:0; color:white;">CSS 3D 实验室</h2>
+            <p style="font-size:12px; color: #666;">Web 3D 渲染原理可视化</p>
+        </div>
+
+        <!-- 场景控制 -->
+        <div class="control-group">
+            <div class="control-header">
+                1. 视口 (Viewport)
+                <span class="info-tooltip" title="模拟人眼到屏幕的距离">?</span>
+            </div>
+            <label>Perspective (透视深度) <span class="value-display" id="val-persp">1000px</span></label>
+            <input type="range" id="inp-persp" min="200" max="2000" value="1000" step="50">
+        </div>
+
+        <!-- 全局旋转 -->
+        <div class="control-group">
+            <div class="control-header">
+                2. 观察视角 (Camera Orbit)
+                <span class="info-tooltip" title="旋转整个世界容器">?</span>
+            </div>
+            <label>Rotate X (上下) <span class="value-display" id="val-rotX">20deg</span></label>
+            <input type="range" id="inp-rotX" min="-180" max="180" value="20">
+            
+            <label>Rotate Y (左右) <span class="value-display" id="val-rotY">30deg</span></label>
+            <input type="range" id="inp-rotY" min="-180" max="180" value="30">
+        </div>
+
+        <!-- 父容器控制 -->
+        <div class="control-group">
+            <div class="control-header">
+                3. 父容器 (Parent Box)
+                <span class="info-tooltip" title="承载子元素的容器">?</span>
+            </div>
+            <label>Rotate Y (自身旋转) <span class="value-display" id="val-boxRot">0deg</span></label>
+            <input type="range" id="inp-boxRot" min="-180" max="180" value="0">
+
+            <label class="checkbox-wrapper">
+                <input type="checkbox" id="inp-preserve" checked>
+                <span>transform-style: preserve-3d</span>
+            </label>
+            <small style="color:#666; font-size:11px; line-height:1.2;">
+                关闭后，子元素会被"压扁"在父容器平面上，失去 3D 深度。
+            </small>
+        </div>
+
+        <!-- 子元素控制 -->
+        <div class="control-group">
+            <div class="control-header">
+                4. 旋转卡牌 (Flippable Card)
+                <span class="info-tooltip" title="旋转卡牌自身，展示背面">?</span>
+            </div>
+            <label>Rotate Y (翻转) <span class="value-display" id="val-cardFlip">0deg</span></label>
+            <input type="range" id="inp-cardFlip" min="0" max="360" value="0">
+            <small style="color:#666; font-size:11px; line-height:1.2;">
+                拖动到 180度 查看背面。
+            </small>
+        </div>
+    </div>
+
+
+    <!-- 2. 中间：3D 视图 -->
+    <div class="viewport" id="viewport">
+        <!-- World: 负责整体旋转 -->
+        <div class="world" id="world">
+            
+            <!-- 辅助坐标轴 -->
+            <div class="axis-group">
+                <div class="axis axis-x"></div>
+                <div class="axis axis-y"></div>
+                <div class="axis axis-z"></div>
+            </div>
+            <!-- 地面网格 -->
+            <div class="grid-floor"></div>
+
+            <!-- 父容器 (虚线框) -->
+            <div class="box-container" id="boxContainer">
+                <div class="box-label">Parent Container</div>
+                
+                <!-- 子元素：可翻转卡牌容器 -->
+                <div class="card-wrapper" id="cardWrapper">
+                    <!-- 正面 -->
+                    <div class="card-face card-front">
+                        FRONT
+                    </div>
+                    <!-- 背面 -->
+                    <div class="card-face card-back">
+                        BACK
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- 3. 右侧：实时代码 -->
+    <div class="code-panel">
+        <h3 style="margin-top:0; color:white; border-bottom:1px solid #333; padding-bottom:10px;">Generated CSS</h3>
+        
+        <div class="code-block">
+            <span class="comment">/* 1. 舞台：定义透视 */</span>
+            <span class="selector">.viewport</span> <span class="bracket">{</span><br>
+            &nbsp;&nbsp;<span class="property">perspective</span>: <span class="value" id="code-persp">1000px</span>;<br>
+            <span class="bracket">}</span>
+        </div>
+
+        <div class="code-block">
+            <span class="comment">/* 2. 世界：整体旋转 */</span>
+            <span class="selector">.world</span> <span class="bracket">{</span><br>
+            &nbsp;&nbsp;<span class="property">transform</span>: <span class="value" id="code-world">rotateX(20deg) rotateY(30deg)</span>;<br>
+            &nbsp;&nbsp;<span class="property">transform-style</span>: <span class="value">preserve-3d</span>;<br>
+            <span class="bracket">}</span>
+        </div>
+
+        <div class="code-block">
+            <span class="comment">/* 3. 父容器：建立局部 3D 空间 */</span>
+            <span class="selector">.parent-box</span> <span class="bracket">{</span><br>
+            <div id="line-preserve" class="highlight-line">
+            &nbsp;&nbsp;<span class="property">transform-style</span>: <span class="value" id="code-preserve">preserve-3d</span>;
+            </div>
+            &nbsp;&nbsp;<span class="property">transform</span>: <span class="value" id="code-boxRot">rotateY(0deg)</span>;<br>
+            <span class="bracket">}</span>
+        </div>
+
+        <div class="code-block">
+            <span class="comment">/* 4. 子元素：卡牌容器 */</span>
+            <span class="selector">.card-wrapper</span> <span class="bracket">{</span><br>
+            &nbsp;&nbsp;<span class="property">transform-style</span>: <span class="value">preserve-3d</span>;<br>
+            &nbsp;&nbsp;<span class="property">transform</span>: <span class="value" id="code-cardFlip">rotateY(0deg)</span>;<br>
+            <span class="bracket">}</span>
+            <span class="comment" style="font-size:11px; margin-top:2px;">↑ 旋转此容器以翻转卡牌。</span>
+        </div>
+
+        <div class="code-block" style="opacity: 0.7; font-size: 0.9em;">
+            <span class="comment">/* 卡牌面样式 (固定) */</span>
+            <span class="selector">.card-face</span> <span class="bracket">{</span><br>
+            &nbsp;&nbsp;<span class="property">backface-visibility</span>: <span class="value">hidden</span>;<br>
+            <span class="bracket">}</span><br>
+            <span class="selector">.card-back</span> <span class="bracket">{</span><br>
+            &nbsp;&nbsp;<span class="property">transform</span>: <span class="value">rotateY(180deg)</span>;<br>
+            <span class="bracket">}</span>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const viewport = document.getElementById('viewport');
+        const world = document.getElementById('world');
+        const boxContainer = document.getElementById('boxContainer');
+        // 替换为卡牌容器
+        const cardWrapper = document.getElementById('cardWrapper');
+
+        // Inputs
+        const inputs = {
+            persp: document.getElementById('inp-persp'),
+            rotX: document.getElementById('inp-rotX'),
+            rotY: document.getElementById('inp-rotY'),
+            boxRot: document.getElementById('inp-boxRot'),
+            // 替换为卡牌翻转输入
+            cardFlip: document.getElementById('inp-cardFlip'),
+            preserve: document.getElementById('inp-preserve'),
+        };
+
+        // Value Displays
+        const displays = {
+            persp: document.getElementById('val-persp'),
+            rotX: document.getElementById('val-rotX'),
+            rotY: document.getElementById('val-rotY'),
+            boxRot: document.getElementById('val-boxRot'),
+            // 替换为卡牌翻转显示
+            cardFlip: document.getElementById('val-cardFlip'),
+        };
+
+        // Code Displays
+        const codes = {
+            persp: document.getElementById('code-persp'),
+            world: document.getElementById('code-world'),
+            boxRot: document.getElementById('code-boxRot'),
+            preserve: document.getElementById('code-preserve'),
+            // 替换为卡牌翻转代码显示
+            cardFlip: document.getElementById('code-cardFlip'),
+        };
+
+        const linePreserve = document.getElementById('line-preserve');
+
+        // Update Function
+        function updateScene() {
+            // 1. Perspective
+            const p = inputs.persp.value;
+            viewport.style.perspective = `${p}px`;
+            displays.persp.innerText = `${p}px`;
+            codes.persp.innerText = `${p}px`;
+
+            // 2. World Rotation
+            const rx = inputs.rotX.value;
+            const ry = inputs.rotY.value;
+            world.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+            displays.rotX.innerText = `${rx}deg`;
+            displays.rotY.innerText = `${ry}deg`;
+            codes.world.innerText = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+
+            // 3. Parent Box
+            const br = inputs.boxRot.value;
+            const isPreserve = inputs.preserve.checked;
+            
+            boxContainer.style.transform = `rotateY(${br}deg)`;
+            boxContainer.style.transformStyle = isPreserve ? 'preserve-3d' : 'flat';
+            
+            displays.boxRot.innerText = `${br}deg`;
+            codes.boxRot.innerText = `rotateY(${br}deg)`;
+            codes.preserve.innerText = isPreserve ? 'preserve-3d' : 'flat';
+            
+            // Visual feedback for preserve-3d toggle
+            linePreserve.style.background = isPreserve ? 'rgba(56, 189, 248, 0.15)' : 'rgba(239, 68, 68, 0.2)';
+
+            // 4. Card Flip (New Logic)
+            const flipY = inputs.cardFlip.value;
+            
+            cardWrapper.style.transform = `rotateY(${flipY}deg)`;
+            
+            displays.cardFlip.innerText = `${flipY}deg`;
+            codes.cardFlip.innerText = `rotateY(${flipY}deg)`;
+        }
+
+        // Add Event Listeners
+        Object.values(inputs).forEach(input => {
+            input.addEventListener('input', updateScene);
+        });
+
+        // Mouse Drag to Rotate World (Usability enhancement)
+        let isDragging = false;
+        let lastX, lastY;
+
+        viewport.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            viewport.style.cursor = 'grabbing';
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+            viewport.style.cursor = 'default';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - lastX;
+            const deltaY = e.clientY - lastY;
+            
+            // Update inputs values
+            let newY = parseInt(inputs.rotY.value) + deltaX * 0.5;
+            let newX = parseInt(inputs.rotX.value) - deltaY * 0.5;
+            
+            inputs.rotY.value = newY;
+            inputs.rotX.value = newX;
+            
+            updateScene();
+            
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
+
+        // Initialize
+        updateScene();
+
+    </script>
+</body>
+</html>

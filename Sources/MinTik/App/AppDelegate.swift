@@ -152,7 +152,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func setupStatusItem() {
-        let item = NSStatusBar.system.statusItem(withLength: 28)
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
             if let imageURL = resourceURL(name: "MenuBarIcon", ext: "svg"),
                let image = NSImage(contentsOf: imageURL) {
@@ -166,7 +166,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 button.imagePosition = .imageOnly
                 button.imageScaling = .scaleProportionallyDown
             } else {
-                button.title = "休息"
+                button.title = "minTik"
             }
             
             button.target = self
